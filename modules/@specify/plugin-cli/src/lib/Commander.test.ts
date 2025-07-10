@@ -134,4 +134,16 @@ describe("Commander", () => {
             commander.run('echo "overlapping command"'),
         ).rejects.toThrow(`A command is already running: ${command}`);
     });
+
+    it("overwrites the output and status code when output is cucumber no-op", async () => {
+        const promise = commander.run("echo test");
+
+        session.emitOutput("0 scenarios\n0 steps");
+        session.emitDelimiter(0);
+
+        await promise;
+
+        expect(commander.output).toBe("No scenarios found");
+        expect(commander.statusCode).toBe(2);
+    })
 });

@@ -152,13 +152,16 @@ export class Commander {
      */
     #processOutput(output: string): void {
         this.#output += output.replace(this.#delimiter.regexp, "");
-
+        
         if (output.includes(this.#delimiter.uuid)) {
-            this.#statusCode = this.#extractKeyedValue(
-                output,
-                this.#statusCodeKey,
-                true,
-            ) as number;
+            if (this.#verifyScenarioOutput()) {
+                this.#statusCode = this.#extractKeyedValue(
+                    output,
+                    this.#statusCodeKey,
+                    true,
+                ) as number;
+            }
+
             this.#resolveRun();
         }
     }
@@ -171,5 +174,25 @@ export class Commander {
         this.#commandResolve = null;
 
         resolve();
+    }
+
+    /**
+     * Verifies scenario output to make sure scenarios were found and run. If
+     * it was a cucumber no-op, overwrite the output with our error message and
+     * set the status code to `2` to indicate the issue.
+     * 
+     * @returns true if scenarios were run, false otherwise
+     */
+    #verifyScenarioOutput(): boolean {
+        const cucumberNoopOutput = /0 scenarios\n0 steps/;
+
+        if (cucumberNoopOutput.test(this.output)) {
+            this.#output = "No scenarios found";
+            this.#statusCode = 2;
+            
+            return false;
+        }
+
+        return true;
     }
 }

@@ -21,14 +21,8 @@ Feature: Basic Test Execution
             And the console output should be a "failing test result"
 
         Scenario: Mixed pass/fail tests
-            When a user runs the command "npx specify test ./assets/gherkin/binary"
+            When a user runs the command "npx specify test ./assets/gherkin/binary/"
             Then the command should exit with a "failure" status code
-
-        @skip
-        Scenario: Feature contains no scenarios
-            When a user runs the command "npx specify test ./assets/gherkin/empty.feature"
-            Then the command should exit with an "failure" status code
-            And the console output should be a "no test cases error"
 
     Rule: The run should error if there are invalid features
 
@@ -46,20 +40,26 @@ Feature: Basic Test Execution
 
         @skip
         Scenario: User-specified path does not exist
-            When a user runs the command "npx specify test ./nonexistent/path"
+            When a user runs the command "npx specify test ./nonexistent/path/"
             Then the command should exit with a "error" status code
             And the console output should be a "path not found error"
 
         @skip
         Scenario: User-specified path is empty
-            When a user runs the command "npx specify test ./assets/empty"
+            When a user runs the command "npx specify test ./assets/gherkin/empty/"
             Then the command should exit with a "error" status code
             And the console output should be a "no test cases error"
 
         @skip
         Scenario: User-specified path contains no features
-            When a user runs the command "npx specify test ./assets/images"
+            When a user runs the command "npx specify test ./assets/gherkin/no-features/test.md"
             Then the command should exit with a "error" status code
+            And the console output should be a "no test cases error"
+        
+        @skip
+        Scenario: User-specified path contains no scenarios
+            When a user runs the command "npx specify test ./assets/gherkin/empty.feature"
+            Then the command should exit with an "failure" status code
             And the console output should be a "no test cases error"
 
     Rule: Execution without a subcommand should default to testing
@@ -70,16 +70,14 @@ Feature: Basic Test Execution
 
     Rule: Users can run subsets of tests by path or tag
 
-        @skip
         Scenario: Only run tests with the specified tag
-            When a user runs the command "npx specify test --tags '@pass' ./assets/gherkin/binary"
+            When a user runs the command "npx specify test --tags '@pass' ./assets/gherkin/binary/"
             Then the command should exit with a "success" status code
         
         Scenario: Do not run tests with the specified inverted tag
-            When a user runs the command "npx specify test --tags 'not @fail' ./assets/gherkin/binary"
+            When a user runs the command "npx specify test --tags 'not @fail' ./assets/gherkin/binary/"
             Then the command should exit with a "success" status code
 
-        @skip
         Scenario: Unmatched tags cause an error
             When a user runs the command "npx specify test --tags '@nevermatch'"
             Then the command should exit with a "error" status code
