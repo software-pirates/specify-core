@@ -6,6 +6,7 @@
  * A Cucumber-based testing tool built to support behavior-driven development.
  */
 
+import _                    from "lodash";
 import chalk                from "chalk";
 import { watch            } from "chokidar";
 import minimist             from "minimist";
@@ -86,12 +87,35 @@ if (specifyArgs.watch) {
     let executionQueued  = false;
     let initialExecution = true;
 
+    const debouncedExecution = _.debounce(async () => {
+        try {
+            // create the lock file in the temporary directory
+            fs.writeFileSync(lockFilePath, "");
+
+            const res = await cmd.execute(args);
+
+            if (res.error) {
+                throw deserializeError(res.error);
+            }
+        } catch (error) {
+            log("Error executing command:", error);
+        } finally {
+            // remove the lock file after execution
+            fs.unlinkSync(lockFilePath);
+
+            log(`\n${promptPrefix} Watching for changes...\n`);
+
+            executionQueued = false;
+            initialExecution = false;
+        }
+    }, 500);
+
     watch(
         config.paths.watch?.paths.map((watchPath) => path.resolve(watchPath)),
         {
             "ignored": config.paths.watch?.ignore.map(
                 (ignorePattern) => new RegExp(ignorePattern),
-            ) ?? [/\/node_modules\//, /\/dist\//],
+            ) ?? [/\/node_modules\//],
             "persistent": true,
         },
     ).on("all", async (event) => {
@@ -126,26 +150,7 @@ if (specifyArgs.watch) {
                 });
             }
 
-            try {
-                // create the lock file in the temporary directory
-                fs.writeFileSync(lockFilePath, "");
-
-                const res = await cmd.execute(args);
-
-                if (res.error) {
-                    throw deserializeError(res.error);
-                }
-            } catch (error) {
-                log("Error executing command:", error);
-            } finally {
-                // remove the lock file after executionasd
-                fs.unlinkSync(lockFilePath);
-
-                log(`\n${promptPrefix} Watching for changes...\n`);
-
-                executionQueued = false;
-                initialExecution = false;
-            }
+            void debouncedExecution();
         }
     });
 } else {

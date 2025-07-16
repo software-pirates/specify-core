@@ -2,7 +2,7 @@ Feature: Watch Mode
     As a software developer
     I want to run tests in watch mode that automatically rerun when files change
     So that I can get immediate feedback during development without manually rerunning tests
-    ssssssss
+
     Background:
         Given that the "@specify/core" NPM package is installed
         And that the "@specify/plugin-cli" NPM package is installed
