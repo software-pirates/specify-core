@@ -8,43 +8,66 @@
 
 import minimist             from "minimist";
 import { log              } from "node:console";
-import path                 from "node:path";
+import path                 from "path";
 import { deserializeError } from "serialize-error";
 
-import { config  } from "@/config/all";
-import { Command } from "./lib/Command";
+import { config                } from "@/config/all";
+import { Command, SPECIFY_ARGS } from "./lib/Command";
+import { TestCommandWatcher    } from "./lib/TestCommandWatcher";
 
-import {
-    TestCommand,
-    TEST_COMMAND_DEFAULT_OPTS
-} from "./lib/TestCommand";
+import type { ISpecifyArgs } from "./lib/Command";
 
-const minOpts = {};
-const args    = minimist(process.argv.slice(2), minOpts);
+import { TestCommand, TEST_COMMAND_DEFAULT_OPTS } from "./lib/TestCommand";
+
+const getSpecifyArgs = (args: minimist.ParsedArgs): ISpecifyArgs => {
+    return Object.entries(args)
+        .filter(([key]) => SPECIFY_ARGS.includes(key))
+        .reduce((acc, [key, value]) => {
+            acc[key] = value;
+            return acc;
+        }, {});
+};
+
+const minOpts     = { "boolean": SPECIFY_ARGS };
+const args        = minimist(process.argv.slice(2), minOpts);
+const specifyArgs = getSpecifyArgs(args);
 
 let cmd: Command;
 
 switch (args._[0]?.toLowerCase()) {
     case "test":
         args._.shift();
-        // fall through to default
+    // fall through to default
     default:
         cmd = new TestCommand({
             "cucumber":     config.cucumber,
             "debug":        config.debug,
-            "gherkinPaths": [ path.resolve(config.paths.gherkin) ],
-            "logPath":      path.resolve(config.paths.logs, TEST_COMMAND_DEFAULT_OPTS.logPath),
-            "plugins":      [ ...config.plugins, path.resolve(import.meta.dirname, "../dist/cucumber") ],
+            "gherkinPaths": [path.resolve(config.paths.gherkin)],
+            "logPath":      path.resolve(
+                config.paths.logs,
+                TEST_COMMAND_DEFAULT_OPTS.logPath,
+            ),
+            "plugins": [
+                ...config.plugins,
+                path.resolve(import.meta.dirname, "../dist/cucumber"),
+            ],
         });
 }
 
-const res = await cmd.execute(args);
+if (specifyArgs.watch) {
+    const watcher = new TestCommandWatcher(cmd as TestCommand);
 
-if (res.error) {
-    log((res.debug)
-        ? deserializeError(res.error)
-        : deserializeError(res.error).message
-    )
+    await watcher.start(args);
+} else {
+    const res = await cmd.execute(args);
+
+    if (res.error) {
+        log(
+            res.debug
+                ? deserializeError(res.error)
+                : deserializeError(res.error).message,
+        );
+    }
+
+    process.exit(res.status);
 }
-
-process.exit(res.status);

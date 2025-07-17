@@ -73,7 +73,7 @@ Feature: Basic Test Execution
         Scenario: Only run tests with the specified tag
             When a user runs the command "npx specify test --tags '@pass' ./assets/gherkin/binary/"
             Then the command should exit with a "success" status code
-        
+
         Scenario: Do not run tests with the specified inverted tag
             When a user runs the command "npx specify test --tags 'not @fail' ./assets/gherkin/binary/"
             Then the command should exit with a "success" status code

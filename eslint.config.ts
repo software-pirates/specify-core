@@ -91,16 +91,14 @@ export default tseslint.config(
         },
     },
     {
-        "files": [
-            "eslint.config.ts",
-            "eslint-plugin/**/*.ts",
-        ],
+        "files": ["eslint.config.ts", "eslint-plugin/**/*.ts"],
         "rules": {
             "@typescript-eslint/naming-convention": "off",
         },
     },
     {
         "ignores": [
+            "./logs/**",
             "**/*.d.ts",
             "**/.DS_Store/**",
             "**/.vscode/**",
