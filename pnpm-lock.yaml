@@ -114,6 +114,9 @@ importers:
       chokidar:
         specifier: ^4.0.3
         version: 4.0.3
+      deepmerge:
+        specifier: ^4.3.1
+        version: 4.3.1
       globby:
         specifier: ^14.1.0
         version: 14.1.0
@@ -126,9 +129,6 @@ importers:
       serialize-error:
         specifier: ^12.0.0
         version: 12.0.0
-      type-fest:
-        specifier: ^4.41.0
-        version: 4.41.0
     devDependencies:
       '@types/minimist':
         specifier: ^1.2.5
@@ -136,15 +136,15 @@ importers:
       '@types/resolve':
         specifier: ^1.20.6
         version: 1.20.6
-      deepmerge:
-        specifier: ^4.3.1
-        version: 4.3.1
       ts-morph:
         specifier: ^25.0.1
         version: 25.0.1
       tsc-alias:
         specifier: ^1.8.16
         version: 1.8.16
+      type-fest:
+        specifier: ^4.41.0
+        version: 4.41.0
       typescript:
         specifier: ^5.8.3
         version: 5.8.3
