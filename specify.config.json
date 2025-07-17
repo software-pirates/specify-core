@@ -15,6 +15,7 @@
             "./modules/@specify/quick-ref/dist"
         ],
         "ignore": [
+            "\\/logs\\/",
             "\\.test\\.ts$",
             "\\.spec\\.ts$",
             "__tests__",

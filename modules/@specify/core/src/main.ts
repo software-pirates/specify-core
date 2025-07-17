@@ -27,7 +27,7 @@ const getSpecifyArgs = (args: minimist.ParsedArgs): ISpecifyArgs => {
         }, {});
 };
 
-const minOpts     = {};
+const minOpts     = { "boolean": SPECIFY_ARGS };
 const args        = minimist(process.argv.slice(2), minOpts);
 const specifyArgs = getSpecifyArgs(args);
 

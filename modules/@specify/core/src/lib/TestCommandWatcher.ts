@@ -47,9 +47,9 @@ export class TestCommandWatcher {
     #debug = this.#config.debug || this.#config.watch.debug;
 
     /**
-     * Path to the lock file used to prevent concurrent executions.
+     * Debounced execution function.
      */
-    #lockFilePath: string;
+    #debouncedExecution: ReturnType<typeof _.debounce>;
 
     /**
      * Flag to track if an execution is currently queued.
@@ -64,6 +64,26 @@ export class TestCommandWatcher {
     );
 
     /**
+     * Flag to track if this is the initial execution.
+     */
+    #initialExecution: boolean = true;
+
+    /**
+     * Path to the lock file used to prevent concurrent executions.
+     */
+    #lockFilePath: string;
+
+    /**
+     * Prompt prefix for console output.
+     */
+    #promptPrefix: string;
+
+    /**
+     * Flag to indicate if a restart is required due to configuration changes.
+     */
+    #restartRequired: boolean = false;
+
+    /**
      * Events to watch for file system changes.
      */
     #watchEvents: string[] = this.#config.watch.events ?? [
@@ -71,21 +91,6 @@ export class TestCommandWatcher {
         "change",
         "unlink",
     ];
-
-    /**
-     * Flag to track if this is the initial execution.
-     */
-    #initialExecution: boolean = true;
-
-    /**
-     * Debounced execution function.
-     */
-    #debouncedExecution: ReturnType<typeof _.debounce>;
-
-    /**
-     * Prompt prefix for console output.
-     */
-    #promptPrefix: string;
 
     /**
      * Initialize the TestCommandWatcher.
@@ -123,92 +128,6 @@ export class TestCommandWatcher {
         if (data !== undefined) {
             log(chalk.gray(JSON.stringify(data, null, 2)));
         }
-    }
-
-    /**
-     * Start watching for file changes and execute the command when changes occur.
-     *
-     * @param args - Command line arguments to pass to the TestCommand
-     */
-    async start(args: ParsedArgs): Promise<void> {
-        clear();
-
-        const watchPaths = config.watch.paths.map((watchPath) =>
-            path.resolve(watchPath),
-        );
-
-        if (watchPaths.length === 0) {
-            log(
-                `${this.#promptPrefix} No watch paths configured. Please set "watch.paths" in specify.config.json.`,
-            );
-            log(`${this.#promptPrefix} Exiting...`);
-
-            process.exit(1);
-        }
-
-        // remove the lock file if it exists (to ensure a clean start)
-        if (fs.existsSync(this.#lockFilePath)) {
-            fs.unlinkSync(this.#lockFilePath);
-        }
-
-        watch(watchPaths, {
-            "ignored":    this.#ignoredPatterns,
-            "persistent": true,
-        }).on("all", async (event, filePath) => {
-            this.#debugLog(`Detected ${event} event for ${filePath}`);
-
-            if (this.#executionQueued) {
-                this.#debugLog("Execution prevented: already queued.");
-
-                return;
-            }
-
-            if (this.#watchEvents.includes(event)) {
-                if (
-                    fs.existsSync(this.#lockFilePath) &&
-                    !this.#executionQueued
-                ) {
-                    this.#executionQueued = true;
-
-                    if (this.#initialExecution) {
-                        this.#debugLog(
-                            "Skipping queue: initial execution running.",
-                        );
-
-                        return;
-                    }
-
-                    this.#debugLog(
-                        `Execution queued: waiting for lock file removal (${chalk.gray(this.#lockFilePath)})...`,
-                    );
-
-                    await new Promise<void>((resolve) => {
-                        const watcher = fs.watch(
-                            this.#lockFilePath,
-                            { "persistent": true },
-                            (eventType) => {
-                                // there are only 2 event types here: rename and change
-                                // rename indicates the file was deleted, moved, or otherwise isn't there anymore
-                                if (eventType === "rename") {
-                                    this.#debugLog(
-                                        "Lock file removed, proceeding with queued execution.",
-                                    );
-
-                                    watcher.close();
-                                    resolve();
-                                }
-                            },
-                        );
-                    });
-                }
-
-                this.#debugLog(
-                    `Triggering debounced execution (debounced ${DEBOUNCE_MS}ms)...`,
-                );
-
-                void this.#debouncedExecution(args);
-            }
-        });
     }
 
     /**
@@ -250,5 +169,137 @@ export class TestCommandWatcher {
             this.#executionQueued = false;
             this.#initialExecution = false;
         }
+    }
+
+    /**
+     * Check if the configuration file has changed based on the file path.
+     */
+    #hasConfigChanged(filePath: string): boolean {
+        if (!this.#initialExecution) {
+            const projectRoot = path.resolve(process.cwd());
+            const configPath  = path.join(projectRoot, "specify.config.json");
+
+            if (path.resolve(filePath) === configPath) {
+                return true;
+            }
+        }
+
+        return false;
+    }
+
+    /**
+     * Notify the user that the configuration file has changed and the watcher needs to be restarted.
+     */
+    #notifyConfigChange(): void {
+        const warningMessage = `${this.#promptPrefix}${chalk.yellow("[Notice]")} specify.config.json has been modified.`;
+        const restartMessage = `${this.#promptPrefix}${chalk.yellow("[Notice]")} Please restart the watcher to pick up the configuration changes.`;
+
+        log(`${warningMessage}\n${restartMessage}`);
+    }
+
+    /**
+     * Queue the execution of the command, setting the flag to prevent multiple executions.
+     */
+    #queueExecution(): void {
+        this.#executionQueued = true;
+
+        if (this.#initialExecution) {
+            this.#debugLog("Skipping queue: initial execution running.");
+
+            return;
+        }
+
+        this.#debugLog(
+            `Execution queued: waiting for lock file removal (${chalk.gray(this.#lockFilePath)})...`,
+        );
+    }
+
+    /**
+     * Start watching for file changes and execute the command when changes occur.
+     *
+     * @param args - Command line arguments to pass to the TestCommand
+     */
+    async start(args: ParsedArgs): Promise<void> {
+        clear();
+
+        const watchPaths = config.watch.paths.map((watchPath) =>
+            path.resolve(watchPath),
+        );
+
+        if (watchPaths.length === 0) {
+            log(
+                `${this.#promptPrefix} No watch paths configured. Please set "watch.paths" in specify.config.json.`,
+            );
+            log(`${this.#promptPrefix} Exiting...`);
+
+            process.exit(1);
+        }
+
+        // remove the lock file if it exists (to ensure a clean start)
+        if (fs.existsSync(this.#lockFilePath)) {
+            fs.unlinkSync(this.#lockFilePath);
+        }
+
+        watch(watchPaths, {
+            "ignored":    this.#ignoredPatterns,
+            "persistent": true,
+        }).on("all", async (event, filePath) => {
+            this.#debugLog(`Detected ${event} event for ${filePath}`);
+
+            if (this.#restartRequired || this.#hasConfigChanged(filePath)) {
+                this.#restartRequired = true;
+
+                this.#notifyConfigChange();
+
+                return;
+            }
+
+            if (this.#executionQueued) {
+                this.#debugLog("Execution prevented: already queued.");
+
+                return;
+            }
+
+            if (this.#watchEvents.includes(event)) {
+                if (
+                    fs.existsSync(this.#lockFilePath) &&
+                    !this.#executionQueued
+                ) {
+                    this.#queueExecution();
+
+                    await this.#waitForLockFileRemoval();
+                }
+
+                this.#debugLog(
+                    `Triggering debounced execution (debounced ${DEBOUNCE_MS}ms)...`,
+                );
+
+                void this.#debouncedExecution(args);
+            }
+        });
+    }
+
+    /**
+     * Wait for the lock file to be removed before proceeding with execution.
+     */
+    async #waitForLockFileRemoval(): Promise<void> {
+        return new Promise<void>((resolve) => {
+            const watcher = fs.watch(
+                this.#lockFilePath,
+                { "persistent": true },
+                (eventType) => {
+                    // there are only 2 event types here: rename and change
+                    // rename indicates the file was deleted, moved, or otherwise isn't there anymore
+                    if (eventType === "rename") {
+                        this.#debugLog(
+                            "Lock file removed, proceeding with queued execution.",
+                        );
+
+                        watcher.close();
+                        resolve();
+                    }
+                },
+            );
+        });
     }
 }
