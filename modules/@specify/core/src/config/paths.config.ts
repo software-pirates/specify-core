@@ -1,10 +1,5 @@
-/**
- * A string that will be converted to a RegExp pattern
- *
- * @example "\\.test\\.ts$" or "node_modules"
- */
-
 export type PathsConfig = {
+    [key: string]: string;
     gherkin: string;
     logs: string;
     refs: string;

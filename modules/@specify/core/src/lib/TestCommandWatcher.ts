@@ -54,19 +54,19 @@ export class TestCommandWatcher {
     /**
      * Flag to track if an execution is currently queued.
      */
-    #executionQueued: boolean = false;
+    #executionQueued = false;
 
     /**
      * Patterns to ignore when watching files.
      */
-    #ignoredPatterns: RegExp[] = this.#config.watch.ignore.map(
+    #ignoredPatterns = this.#config.watch.ignore.map(
         (ignorePattern) => new RegExp(ignorePattern),
     );
 
     /**
      * Flag to track if this is the initial execution.
      */
-    #initialExecution: boolean = true;
+    #initialExecution = true;
 
     /**
      * Path to the lock file used to prevent concurrent executions.
@@ -81,7 +81,7 @@ export class TestCommandWatcher {
     /**
      * Flag to indicate if a restart is required due to configuration changes.
      */
-    #restartRequired: boolean = false;
+    #restartRequired = false;
 
     /**
      * Events to watch for file system changes.
