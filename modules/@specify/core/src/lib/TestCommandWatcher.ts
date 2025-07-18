@@ -210,17 +210,13 @@ export class TestCommandWatcher {
      * Queue the execution of the command, setting the flag to prevent multiple executions.
      */
     #queueExecution(): void {
-        this.#executionQueued = true;
-
         if (this.#initialExecution) {
             this.#debugLog("Skipping queue: initial execution running.");
 
             return;
         }
 
-        this.#debugLog(
-            `Execution queued: waiting for lock file removal (${chalk.gray(this.#lockFilePath)})...`,
-        );
+        this.#executionQueued = true;
     }
 
     /**
@@ -275,6 +271,10 @@ export class TestCommandWatcher {
                     !this.#executionQueued
                 ) {
                     this.#queueExecution();
+
+                    this.#debugLog(
+                        `Execution queued: waiting for lock file removal (${chalk.gray(this.#lockFilePath)})...`,
+                    );
 
                     await this.#waitForLockFileRemoval();
                 }
