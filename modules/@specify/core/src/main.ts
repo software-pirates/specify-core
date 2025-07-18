@@ -15,10 +15,7 @@ import { deserializeError } from "serialize-error";
 import { config  } from "@/config/all";
 import { Command } from "./lib/Command";
 
-import {
-    TestCommand,
-    TEST_COMMAND_DEFAULT_OPTS
-} from "./lib/TestCommand";
+import { TestCommand, TEST_COMMAND_DEFAULT_OPTS } from "./lib/TestCommand";
 
 const minOpts = {};
 const args    = minimist(process.argv.slice(2), minOpts);
@@ -45,12 +42,12 @@ cucumberCfg.import.push(path.resolve(import.meta.dirname, "cucumber"));
 switch (args._[0]?.toLowerCase()) {
     case "test":
         args._.shift();
-        // fall through to default
+    // fall through to default
     default:
         cmd = new TestCommand({
             "cucumber":     cucumberCfg,
             "debug":        config.debug,
-            "gherkinPaths": [ path.resolve(config.paths.gherkin) ],
+            "gherkinPaths": [path.resolve(config.paths.gherkin)],
             "logPath":      path.resolve(config.paths.logs, TEST_COMMAND_DEFAULT_OPTS.logPath),
         });
 }
@@ -58,10 +55,7 @@ switch (args._[0]?.toLowerCase()) {
 const res = await cmd.execute(args);
 
 if (res.error) {
-    log((res.debug)
-        ? deserializeError(res.error)
-        : deserializeError(res.error).message
-    )
+    log(res.debug ? deserializeError(res.error) : deserializeError(res.error).message);
 }
 
 process.exit(res.status);

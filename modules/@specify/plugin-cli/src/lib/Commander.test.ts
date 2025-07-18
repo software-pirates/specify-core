@@ -25,17 +25,13 @@ describe("Commander", () => {
 
         await promise;
 
-        expect(session.write).toHaveBeenCalledWith(
-            expect.stringContaining(command),
-        );
+        expect(session.write).toHaveBeenCalledWith(expect.stringContaining(command));
     });
 
     it("resolves run() when delimiter output is received", async () => {
         let resolved = false;
 
-        const promise = commander
-            .run("echo test")
-            .then(() => (resolved = true));
+        const promise = commander.run("echo test").then(() => (resolved = true));
 
         session.emitOutput("test");
 
@@ -130,8 +126,8 @@ describe("Commander", () => {
         // this promise will never resolve due to the throw
         void commander.run(command);
 
-        await expect(
-            commander.run('echo "overlapping command"'),
-        ).rejects.toThrow(`A command is already running: ${command}`);
+        await expect(commander.run('echo "overlapping command"')).rejects.toThrow(
+            `A command is already running: ${command}`,
+        );
     });
 });

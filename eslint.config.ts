@@ -21,10 +21,7 @@ export default tseslint.config(
             "jsonc": eslintPluginJSONC,
         },
         "rules": {
-            "jsonc/array-bracket-newline": [
-                "error",
-                { "multiline": true, "minItems": 2 },
-            ],
+            "jsonc/array-bracket-newline": ["error", { "multiline": true, "minItems": 2 }],
             "jsonc/array-bracket-spacing": ["error", "always"],
             "jsonc/indent":                ["error", 4],
             "jsonc/object-curly-spacing":  ["error", "always"],
@@ -91,10 +88,7 @@ export default tseslint.config(
         },
     },
     {
-        "files": [
-            "eslint.config.ts",
-            "eslint-plugin/**/*.ts",
-        ],
+        "files": ["eslint.config.ts", "eslint-plugin/**/*.ts"],
         "rules": {
             "@typescript-eslint/naming-convention": "off",
         },

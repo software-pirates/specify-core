@@ -16,10 +16,7 @@ export class ShellSession {
 
         assert.ok(match, "Delimiter not found in command!");
 
-        const delimiter = match[1].replace(
-            /\$\?/,
-            malformed ? "badvalue" : statusCode.toString(),
-        );
+        const delimiter = match[1].replace(/\$\?/, malformed ? "badvalue" : statusCode.toString());
 
         this.emitOutput(delimiter);
     });
@@ -30,17 +27,11 @@ export class ShellSession {
 
     kill = vi.fn();
 
-    onClose = vi.fn((callback: () => void) =>
-        this.#closeCallbacks.push(callback),
-    );
+    onClose = vi.fn((callback: () => void) => this.#closeCallbacks.push(callback));
 
-    onError = vi.fn((callback: () => void) =>
-        this.#errorCallbacks.push(callback),
-    );
+    onError = vi.fn((callback: () => void) => this.#errorCallbacks.push(callback));
 
-    onOutput = vi.fn((callback: () => void) =>
-        this.#outputCallbacks.push(callback),
-    );
+    onOutput = vi.fn((callback: () => void) => this.#outputCallbacks.push(callback));
 
     write = vi.fn((command: string) => {
         this.#curCommand = command;

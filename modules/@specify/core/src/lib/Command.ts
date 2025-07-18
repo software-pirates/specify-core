@@ -9,10 +9,7 @@ import { serializeError } from "serialize-error";
 
 import type { ParsedArgs } from "minimist";
 
-import type {
-    JsonObject,
-    JsonValue,
-} from "type-fest";
+import type { JsonObject, JsonValue } from "type-fest";
 
 export const COMMAND_DEFAULT_OPTS: ICommandOptions = {
     "debug":   false,
@@ -20,20 +17,20 @@ export const COMMAND_DEFAULT_OPTS: ICommandOptions = {
 };
 
 export interface ICommandOptions {
-    debug: boolean,
-    logPath: string,
+    debug: boolean;
+    logPath: string;
 }
 
 export interface ICommandResult {
-    ok: boolean,
-    status: CommandResultStatus,
-    error?: JsonObject,
-    result?: JsonValue,
-    debug?: ICommandResultDebugInfo,
+    ok: boolean;
+    status: CommandResultStatus;
+    error?: JsonObject;
+    result?: JsonValue;
+    debug?: ICommandResultDebugInfo;
 }
 
 export interface ICommandResultDebugInfo {
-    args: ParsedArgs,
+    args: ParsedArgs;
 }
 
 export enum CommandResultStatus {
@@ -43,7 +40,6 @@ export enum CommandResultStatus {
 }
 
 export abstract class Command {
-
     /**
      * Output debug info for this command.
      */
@@ -60,18 +56,18 @@ export abstract class Command {
      * @param userOpts - User-supplied options
      */
     constructor(userOpts: Partial<ICommandOptions>) {
-        const mergedOpts = merge.all([ {}, COMMAND_DEFAULT_OPTS, userOpts ]) as ICommandOptions;
+        const mergedOpts = merge.all([{}, COMMAND_DEFAULT_OPTS, userOpts]) as ICommandOptions;
 
-        this.debug   = mergedOpts.debug;
+        this.debug = mergedOpts.debug;
         this.logPath = mergedOpts.logPath;
     }
 
     /**
-     * Execute the Command.  This method should be overridden by child 
+     * Execute the Command.  This method should be overridden by child
      * classes, or it will just return an error result.
      *
      * @param userArgs - User-supplied arguments
-     * 
+     *
      * @returns The Command result
      */
     async execute(userArgs: ParsedArgs): Promise<ICommandResult> {

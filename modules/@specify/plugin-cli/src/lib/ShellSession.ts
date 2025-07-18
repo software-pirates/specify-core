@@ -7,10 +7,7 @@
 
 import { spawn } from "node:child_process";
 
-import type {
-    ChildProcessWithoutNullStreams,
-    SpawnOptions,
-} from "node:child_process";
+import type { ChildProcessWithoutNullStreams, SpawnOptions } from "node:child_process";
 
 import type { ISystemIOSession } from "@/interfaces/ISystemIOSession";
 
@@ -62,9 +59,7 @@ export class ShellSession implements ISystemIOSession {
      * @param callback - function that receives error data as a string
      */
     onError(callback: (data: string) => void): void {
-        this.childProcess.stderr.on("data", (data: Buffer) =>
-            callback(data.toString("utf8")),
-        );
+        this.childProcess.stderr.on("data", (data: Buffer) => callback(data.toString("utf8")));
     }
 
     /**
@@ -73,9 +68,7 @@ export class ShellSession implements ISystemIOSession {
      * @param callback - function that receives output data as a string.
      */
     onOutput(callback: (data: string) => void): void {
-        this.childProcess.stdout.on("data", (data: Buffer) =>
-            callback(data.toString("utf8")),
-        );
+        this.childProcess.stdout.on("data", (data: Buffer) => callback(data.toString("utf8")));
     }
 
     /**

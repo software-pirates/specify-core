@@ -2,9 +2,9 @@ import { Rule     } from "eslint";
 import { TSESTree } from "@typescript-eslint/utils";
 
 type Assignment =
-    TSESTree.AssignmentExpression |
-    TSESTree.ExpressionStatement |
-    TSESTree.VariableDeclaration;
+    | TSESTree.AssignmentExpression
+    | TSESTree.ExpressionStatement
+    | TSESTree.VariableDeclaration;
 
 type AssignmentNodeType = "VariableDeclaration" | "AssignmentExpression";
 
@@ -14,9 +14,8 @@ export default {
         "type":    "problem",
         "fixable": "whitespace",
         "docs":    {
-            "description":
-                "Assignment operators should be aligned in adjacent declarations",
-            "category": "Stylistic Issues",
+            "description": "Assignment operators should be aligned in adjacent declarations",
+            "category":    "Stylistic Issues",
         },
         "priority": 1,
     },
@@ -37,21 +36,15 @@ export default {
                     ? (startNode.parent as ParentWithBody)?.body
                     : (startNode.parent?.parent as ParentWithBody)?.body; // assignment expressions have expression statements as parents
 
-            if (
-                startNode.loc.start.line !== startNode.loc.end.line ||
-                !parentBody?.indexOf
-            ) {
+            if (startNode.loc.start.line !== startNode.loc.end.line || !parentBody?.indexOf) {
                 return group;
             }
 
-            const getAdjacentNodes = (
-                direction: "next" | "previous",
-            ): Assignment[] => {
+            const getAdjacentNodes = (direction: "next" | "previous"): Assignment[] => {
                 const offset              = direction === "next" ? 1 : -1;
                 const nodes: Assignment[] = [];
 
-                let adjacentNode =
-                    parentBody[parentBody.indexOf(startNode) + offset];
+                let adjacentNode          = parentBody[parentBody.indexOf(startNode) + offset];
                 let adjacentNodeStartLine = startNode.loc.start.line;
 
                 while (
@@ -73,8 +66,7 @@ export default {
                     }
 
                     adjacentNodeStartLine = adjacentNode.loc.start.line;
-                    adjacentNode =
-                        parentBody[parentBody.indexOf(adjacentNode) + offset];
+                    adjacentNode = parentBody[parentBody.indexOf(adjacentNode) + offset];
                 }
 
                 return nodes;
@@ -127,10 +119,11 @@ export default {
         ): boolean {
             if (node.type === "VariableDeclaration") {
                 return (
-                    node.declarations.length === 1 &&
-                    node.declarations[0].init &&
-                    node.loc.start.line === adjacentNodeStartLine + offset
-                ) ?? false;
+                    (node.declarations.length === 1 &&
+                        node.declarations[0].init &&
+                        node.loc.start.line === adjacentNodeStartLine + offset) ??
+                    false
+                );
             } else if (
                 node.type === "ExpressionStatement" &&
                 node.expression.type === "AssignmentExpression"
@@ -154,25 +147,22 @@ export default {
 
                 const isAdjustable = (node: Assignment): boolean => {
                     return (
-                        node.type === "VariableDeclaration" &&
-                        node.declarations.length === 1 &&
-                        node.declarations[0].init &&
-                        node.declarations[0].id.type === "Identifier" &&
-                        !processedNodes.has(node)
-                    ) ?? false;
+                        (node.type === "VariableDeclaration" &&
+                            node.declarations.length === 1 &&
+                            node.declarations[0].init &&
+                            node.declarations[0].id.type === "Identifier" &&
+                            !processedNodes.has(node)) ??
+                        false
+                    );
                 };
 
                 if (!isAdjustable(node)) {
                     return;
                 }
 
-                variableGroup.forEach((groupNode) =>
-                    processedNodes.add(groupNode),
-                );
+                variableGroup.forEach((groupNode) => processedNodes.add(groupNode));
 
-                const maxDeclaratorColumn = Math.max(
-                    ...variableGroup.map(getIdentifierEndColumn),
-                );
+                const maxDeclaratorColumn = Math.max(...variableGroup.map(getIdentifierEndColumn));
 
                 for (const groupNode of variableGroup) {
                     const declarator = groupNode.declarations[0];
@@ -188,10 +178,8 @@ export default {
                     }
 
                     const declaratorEndColumn = declarator.id.loc.end.column;
-                    const expectedSpaces      =
-                        maxDeclaratorColumn - declaratorEndColumn + 1;
-                    const actualSpaces =
-                        equalToken.loc.start.column - declaratorEndColumn;
+                    const expectedSpaces      = maxDeclaratorColumn - declaratorEndColumn + 1;
+                    const actualSpaces        = equalToken.loc.start.column - declaratorEndColumn;
 
                     if (actualSpaces !== expectedSpaces) {
                         context.report({
@@ -200,10 +188,7 @@ export default {
                                 "Assignment operators should be aligned in adjacent declarations",
 
                             fix(fixer) {
-                                const spaceBefore =
-                                    context.sourceCode.getTokenBefore(
-                                        equalToken,
-                                    );
+                                const spaceBefore = context.sourceCode.getTokenBefore(equalToken);
 
                                 if (!spaceBefore) {
                                     return null;

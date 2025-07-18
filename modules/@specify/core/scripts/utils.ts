@@ -47,9 +47,7 @@ export const generateInterfaceTypeExport = (
     const entries: string[] = [];
 
     for (const file of sourceFiles) {
-        const aliasMap = new Map(
-            file.getTypeAliases().map((alias) => [alias.getName(), alias]),
-        );
+        const aliasMap = new Map(file.getTypeAliases().map((alias) => [alias.getName(), alias]));
 
         for (const [name, declarations] of file.getExportedDeclarations()) {
             const varDeclarations = declarations.filter((declaration) => {
@@ -57,9 +55,7 @@ export const generateInterfaceTypeExport = (
             });
 
             for (const declaration of varDeclarations) {
-                const varDeclaration = declaration.asKindOrThrow(
-                    ts.SyntaxKind.VariableDeclaration,
-                );
+                const varDeclaration = declaration.asKindOrThrow(ts.SyntaxKind.VariableDeclaration);
 
                 const typeNode = varDeclaration.getTypeNode();
 
@@ -71,17 +67,9 @@ export const generateInterfaceTypeExport = (
                     if (aliasMap.has(typeName)) {
                         const outputPath =
                             opts?.outputFile ||
-                            path.resolve(
-                                import.meta.dirname,
-                                "..",
-                                "types",
-                                "index.d.ts",
-                            );
+                            path.resolve(import.meta.dirname, "..", "types", "index.d.ts");
 
-                        const importPath = getRelativeSourceFileImportPath(
-                            file,
-                            outputPath,
-                        );
+                        const importPath = getRelativeSourceFileImportPath(file, outputPath);
 
                         typeText = `import("${importPath}").${typeName}`;
                     } else {
@@ -96,9 +84,7 @@ export const generateInterfaceTypeExport = (
 
     const spacer = " ".repeat(4);
     const output =
-        `export interface ${interfaceName} {\n` +
-        `${spacer}${entries.join(`\n${spacer}`)}\n` +
-        "}";
+        `export interface ${interfaceName} {\n` + `${spacer}${entries.join(`\n${spacer}`)}\n` + "}";
 
     return output;
 };
@@ -116,10 +102,7 @@ export const getRelativeSourceFileImportPath = (
     outputPath: string,
 ): string => {
     // import paths are relative to the output path
-    let importPath = path.relative(
-        path.dirname(outputPath),
-        sourceFile.getFilePath(),
-    );
+    let importPath = path.relative(path.dirname(outputPath), sourceFile.getFilePath());
 
     if (!importPath.startsWith(".")) {
         importPath = "./" + importPath;

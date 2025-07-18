@@ -85,16 +85,13 @@ async function rebuildPackage<
     ).default as PackageJson;
 
     const buildStartTime = new Date();
-    const packageName    =
-        packageConfig.name || moduleRootDir.split(sep).slice(-2).join("/");
-    const label = wrapLabel(packageName);
+    const packageName    = packageConfig.name || moduleRootDir.split(sep).slice(-2).join("/");
+    const label          = wrapLabel(packageName);
 
     logMessage(`${label} ${event}: ${path}`);
 
     if (!packageConfig.scripts?.build) {
-        logMessage(
-            label + chalk.yellow(" No build script defined, skipping rebuild."),
-        );
+        logMessage(label + chalk.yellow(" No build script defined, skipping rebuild."));
 
         return;
     }
@@ -111,8 +108,7 @@ async function rebuildPackage<
 
     child.on("exit", (code) => {
         const buildEndTime  = new Date();
-        const buildDuration =
-            (buildEndTime.getTime() - buildStartTime.getTime()) / 1000;
+        const buildDuration = (buildEndTime.getTime() - buildStartTime.getTime()) / 1000;
 
         if (code === 0) {
             logMessage(`${label} Build completed in ${buildDuration}s`);

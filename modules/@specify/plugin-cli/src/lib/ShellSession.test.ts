@@ -51,9 +51,7 @@ describe("ShellSession", () => {
 
         new ShellSession().write(command);
 
-        expect(mockChildProcess.stdin.write).toHaveBeenCalledWith(
-            `${command}\n`,
-        );
+        expect(mockChildProcess.stdin.write).toHaveBeenCalledWith(`${command}\n`);
     });
 
     it("calls kill() on the child process", () => {

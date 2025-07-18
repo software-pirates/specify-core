@@ -3,9 +3,7 @@ import type { IConfiguration } from "@cucumber/cucumber/api";
 export type CucumberConfig = Partial<IConfiguration>;
 
 export const cucumber: CucumberConfig = {
-    "format": [
-        "progress"
-    ],
+    "format": ["progress"],
     "import": [
         // step definitions and support file paths go here
         // but everything we add here will be a default inclusion for everyone

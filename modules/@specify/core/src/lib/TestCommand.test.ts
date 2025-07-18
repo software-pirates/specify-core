@@ -2,11 +2,7 @@ import merge from "deepmerge";
 import fs    from "node:fs";
 import path  from "node:path";
 
-import {
-    TestCommand,
-    ITestCommandOptions,
-    TEST_COMMAND_DEFAULT_OPTS
-} from "./TestCommand";
+import { TestCommand, ITestCommandOptions, TEST_COMMAND_DEFAULT_OPTS } from "./TestCommand";
 
 describe("TestCommand", () => {
     const emptyArgs = { "_": [] };
@@ -19,14 +15,14 @@ describe("TestCommand", () => {
                 const cmd     = new TestCommand(emptyOpts);
 
                 // default options get augmented with cucumber formatters for the log and tmp paths
-                expOpts.cucumber.format.push([ "json", cmd.logPath ], [ "json", cmd.tmpPath ]);
+                expOpts.cucumber.format.push(["json", cmd.logPath], ["json", cmd.tmpPath]);
 
                 expect(cmd.cucumber).toEqual(expOpts.cucumber);
                 expect(cmd.gherkinPaths).toEqual(expOpts.gherkinPaths);
             });
 
             it("...with merged values when user options are provided", () => {
-                const userOpts = { "gherkinPaths": [ "./fake/path" ] };
+                const userOpts = { "gherkinPaths": ["./fake/path"] };
                 const cmd      = new TestCommand(userOpts);
 
                 expect(cmd.gherkinPaths).toEqual(userOpts.gherkinPaths);
@@ -41,18 +37,20 @@ describe("TestCommand", () => {
             describe("paths", () => {
                 it("valid", async () => {
                     const featPath = "./assets/gherkin/binary/passing.feature:3";
-                    const userArgs = { "_": [ featPath ] };
+                    const userArgs = { "_": [featPath] };
                     const userOpts = { "debug": true };
                     const cmd      = new TestCommand(userOpts);
                     const res      = await cmd.execute(userArgs);
 
                     expect(res.status).toBe(1); // no support code imported, so steps are undefined
                     expect(res.debug?.args).toBe(userArgs);
-                    expect(res.debug?.cucumber?.runConfiguration?.sources?.paths).toEqual([ path.resolve(featPath) ]);
+                    expect(res.debug?.cucumber?.runConfiguration?.sources?.paths).toEqual([
+                        path.resolve(featPath),
+                    ]);
                 });
 
                 it("invalid", async () => {
-                    const userArgs = { "_": [ "./path/that/doesnt/exist/" ] };
+                    const userArgs = { "_": ["./path/that/doesnt/exist/"] };
                     const cmd      = new TestCommand(emptyOpts);
                     const res      = await cmd.execute(userArgs);
 
@@ -61,14 +59,16 @@ describe("TestCommand", () => {
             });
 
             it("tags", async () => {
-                const userArgs = { "tags": [ "@foo", "not @bar" ], ...emptyArgs };
+                const userArgs = { "tags": ["@foo", "not @bar"], ...emptyArgs };
                 const userOpts = { "debug": true };
                 const cmd      = new TestCommand(userOpts);
                 const res      = await cmd.execute(userArgs);
 
                 expect(res.status).toBe(2); // no scenarios should match these tags
                 expect(res.debug?.args).toBe(userArgs);
-                expect(res.debug?.cucumber?.runConfiguration?.sources?.tagExpression).toBe("(@foo) and (not @bar)");
+                expect(res.debug?.cucumber?.runConfiguration?.sources?.tagExpression).toBe(
+                    "(@foo) and (not @bar)",
+                );
             });
         });
 
@@ -78,16 +78,14 @@ describe("TestCommand", () => {
             beforeAll(() => {
                 userOpts = {
                     "cucumber": {
-                        "import": [
-                            path.resolve(import.meta.dirname, "../../dist/cucumber"),
-                        ],
+                        "import": [path.resolve(import.meta.dirname, "../../dist/cucumber")],
                     },
                     "logPath": path.resolve(`./logs/specify-test-vitest-log-${Date.now()}.json`),
                 };
             });
 
             it("pass", async () => {
-                const userArgs = { "_": [ "./assets/gherkin/binary/passing.feature" ] };
+                const userArgs = { "_": ["./assets/gherkin/binary/passing.feature"] };
                 const cmd      = new TestCommand(userOpts);
                 const res      = await cmd.execute(userArgs);
 
@@ -102,7 +100,7 @@ describe("TestCommand", () => {
             });
 
             it("fail", async () => {
-                const userArgs = { "_": [ "./assets/gherkin/binary/failing.feature" ] };
+                const userArgs = { "_": ["./assets/gherkin/binary/failing.feature"] };
                 const cmd      = new TestCommand(userOpts);
                 const res      = await cmd.execute(userArgs);
 
@@ -117,7 +115,7 @@ describe("TestCommand", () => {
             });
 
             it("error", async () => {
-                const userArgs = { "_": [ "./assets/gherkin/empty" ] };
+                const userArgs = { "_": ["./assets/gherkin/empty"] };
                 const cmd      = new TestCommand(userOpts);
                 const res      = await cmd.execute(userArgs);
 

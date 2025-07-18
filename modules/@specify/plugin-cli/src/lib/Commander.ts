@@ -86,10 +86,7 @@ export class Commander {
      * @throws If another command is already in progress
      */
     async run(command: string): Promise<void> {
-        assert.ok(
-            !this.#commandResolve,
-            `A command is already running: ${this.#curCommand}`,
-        );
+        assert.ok(!this.#commandResolve, `A command is already running: ${this.#curCommand}`);
 
         this.#curCommand = command;
         this.#delimiter = this.#createDelimiter();
@@ -112,9 +109,7 @@ export class Commander {
 
         return {
             "command": `;echo "${prefix} ${this.#statusCodeKey}=$? UUID=${uuid}"`,
-            "regexp":  new RegExp(
-                `${prefix} ${this.#statusCodeKey}=(\\d+) UUID=${uuid}`,
-            ),
+            "regexp":  new RegExp(`${prefix} ${this.#statusCodeKey}=(\\d+) UUID=${uuid}`),
             uuid,
         };
     }
@@ -128,14 +123,8 @@ export class Commander {
      *
      * @throws If the key/value pair is not found
      */
-    #extractKeyedValue(
-        output: string,
-        key: string,
-        parseAsInt?: boolean,
-    ): string | number {
-        const match = output.match(
-            new RegExp(`${key}=${parseAsInt ? "(\\d+)" : "(\\w+)"}`),
-        );
+    #extractKeyedValue(output: string, key: string, parseAsInt?: boolean): string | number {
+        const match = output.match(new RegExp(`${key}=${parseAsInt ? "(\\d+)" : "(\\w+)"}`));
 
         assert.ok(match, `Output does not contain a value for "${key}"`);
 
@@ -154,11 +143,7 @@ export class Commander {
         this.#output += output.replace(this.#delimiter.regexp, "");
 
         if (output.includes(this.#delimiter.uuid)) {
-            this.#statusCode = this.#extractKeyedValue(
-                output,
-                this.#statusCodeKey,
-                true,
-            ) as number;
+            this.#statusCode = this.#extractKeyedValue(output, this.#statusCodeKey, true) as number;
 
             this.#resolveRun();
         }

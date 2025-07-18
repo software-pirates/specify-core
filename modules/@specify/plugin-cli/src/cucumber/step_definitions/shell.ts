@@ -14,15 +14,9 @@ Given("that a command line prompt is available", setupCLI);
 
 When("a/the user runs the command {string}", { "timeout": 60000 }, runCommand);
 
-Then(
-    'the command should exit with a(n)/the "{ref:statusCode}" status code',
-    verifyCLIStatusCode,
-);
+Then('the command should exit with a(n)/the "{ref:statusCode}" status code', verifyCLIStatusCode);
 
-Then(
-    'the console output should be a(n)/the "{ref:consoleOutput}"',
-    verifyCLIOutput,
-);
+Then('the console output should be a(n)/the "{ref:consoleOutput}"', verifyCLIOutput);
 
 /**
  * Run the given command via the CLI

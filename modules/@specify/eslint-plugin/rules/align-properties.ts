@@ -1,11 +1,7 @@
 import { Rule     } from "eslint";
 import { TSESTree } from "@typescript-eslint/utils";
 
-import {
-    isMultiLineNode,
-    isSingleLineNode,
-    hasEmptyLineBetween,
-} from "../lib/utils";
+import { isMultiLineNode, isSingleLineNode, hasEmptyLineBetween } from "../lib/utils";
 
 type NodeGroup = {
     values: Rule.Node[];
@@ -22,8 +18,7 @@ export default {
         "fixable":  "whitespace",
         "schema":   [],
         "messages": {
-            "misalignedProperty":
-                "Object properties should be aligned with adjacent properties",
+            "misalignedProperty": "Object properties should be aligned with adjacent properties",
         },
     },
 
@@ -90,7 +85,6 @@ export default {
             );
         }
 
-
         function targetValueStartingPosition(group: Rule.Node[]) {
             let targetValueStartingPosition = 0;
 
@@ -121,9 +115,9 @@ export default {
                     return;
                 }
 
-                const values = node.properties.filter(
-                    (prop) => (prop.type === "Property" && !prop.method && !prop.shorthand)
-                ).map((property) => (property as TSESTree.Property).value) as Rule.Node[];
+                const values = node.properties
+                    .filter((prop) => prop.type === "Property" && !prop.method && !prop.shorthand)
+                    .map((property) => (property as TSESTree.Property).value) as Rule.Node[];
 
                 const valueGroups = getValueGroups(values);
 
@@ -154,10 +148,12 @@ export default {
                                         propertyNode.key as any,
 
                                         // eslint-disable-next-line @typescript-eslint/no-explicit-any
-                                        valueNode as any
+                                        valueNode as any,
                                     );
 
-                                    const colonToken = tokensBetween.find((token) => token.value === ":");
+                                    const colonToken = tokensBetween.find(
+                                        (token) => token.value === ":",
+                                    );
 
                                     if (!colonToken || !valueNode?.range) {
                                         return null;
@@ -169,7 +165,7 @@ export default {
 
                                     return fixer.replaceTextRange(
                                         [colonToken.range[1], valueNode.range[0]],
-                                        padding
+                                        padding,
                                     );
                                 },
                             });

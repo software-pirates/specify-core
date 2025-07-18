@@ -40,7 +40,4 @@ export const entries = await Promise.all(
     }),
 );
 
-export const config = deepmerge(
-    Object.fromEntries(entries),
-    userConfig,
-) as CoreConfig;
+export const config = deepmerge(Object.fromEntries(entries), userConfig) as CoreConfig;

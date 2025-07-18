@@ -1,10 +1,6 @@
 import { Rule } from "eslint";
 
-import {
-    isMultiLineNode,
-    isSingleLineNode,
-    hasEmptyLineBetween,
-} from "../lib/utils";
+import { isMultiLineNode, isSingleLineNode, hasEmptyLineBetween } from "../lib/utils";
 
 type NodeGroup = {
     hasDestructuredImport: boolean;
@@ -23,9 +19,8 @@ export default {
         "fixable":  "whitespace",
         "schema":   [],
         "messages": {
-            "misalignedImport":
-                "Import statement should be aligned with adjacent imports",
-            "missingSpacing": "Multi-line import should have spacing around it",
+            "misalignedImport": "Import statement should be aligned with adjacent imports",
+            "missingSpacing":   "Multi-line import should have spacing around it",
         },
     },
 
@@ -119,7 +114,8 @@ export default {
             }
 
             return groups.map((group) => {
-                const { targetClosingBracePosition, targetFromPosition } = getTargetPositions(group);
+                const { targetClosingBracePosition, targetFromPosition } =
+                    getTargetPositions(group);
 
                 return {
                     "hasDestructuredImport": hasDestructuredImport(group),
@@ -144,8 +140,7 @@ export default {
                     return null;
                 }
 
-                const lastSpecifier =
-                    node.specifiers[node.specifiers.length - 1];
+                const lastSpecifier   = node.specifiers[node.specifiers.length - 1];
                 const closingBracePos = getClosingBracePosition(node);
 
                 if (!lastSpecifier.loc) {
@@ -156,12 +151,12 @@ export default {
 
                 targetClosingBracePosition = Math.max(
                     targetClosingBracePosition,
-                    (closingBracePos) ? position : position - 2,
+                    closingBracePos ? position : position - 2,
                 );
 
                 targetFromPosition = Math.max(
                     targetFromPosition,
-                    (closingBracePos) ? position + 2 : position,
+                    closingBracePos ? position + 2 : position,
                 );
             });
 
@@ -178,17 +173,13 @@ export default {
                     return false;
                 }
 
-                return node.specifiers.some(
-                    (specifier) => specifier.type === "ImportSpecifier",
-                );
+                return node.specifiers.some((specifier) => specifier.type === "ImportSpecifier");
             });
         }
 
         return {
             Program(node) {
-                const imports = node.body.filter(
-                    (node) => node.type === "ImportDeclaration",
-                );
+                const imports = node.body.filter((node) => node.type === "ImportDeclaration");
 
                 if (imports.length === 0) {
                     return;
@@ -212,8 +203,7 @@ export default {
                         }
 
                         const spacesNeeded =
-                            group.targetFromPosition -
-                            (fromPos - importNode.range[0]);
+                            group.targetFromPosition - (fromPos - importNode.range[0]);
 
                         if (spacesNeeded !== 0) {
                             context.report({
@@ -227,9 +217,7 @@ export default {
 
                                     const fromToken = sourceCode
                                         .getTokens(importNode)
-                                        .find(
-                                            (token) => token.value === "from",
-                                        );
+                                        .find((token) => token.value === "from");
 
                                     if (!fromToken || !importNode.range) {
                                         return null;
@@ -237,71 +225,49 @@ export default {
 
                                     if (closingBraceToken) {
                                         const prevToken =
-                                            sourceCode.getTokenBefore(
-                                                closingBraceToken,
-                                            );
+                                            sourceCode.getTokenBefore(closingBraceToken);
 
                                         if (prevToken) {
-                                            const start = prevToken.range[1];
-                                            const end   =
-                                                closingBraceToken.range[0];
+                                            const start          = prevToken.range[1];
+                                            const end            = closingBraceToken.range[0];
                                             const targetBracePos =
                                                 group.targetClosingBracePosition ||
                                                 group.targetFromPosition - 3;
                                             const spacesBeforeBrace = Math.max(
                                                 1,
                                                 targetBracePos -
-                                                    (prevToken.range[1] -
-                                                        importNode.range[0]),
+                                                    (prevToken.range[1] - importNode.range[0]),
                                             );
 
                                             // always ensure at least 1 space before the closing brace (or adjust as needed)
                                             const fixes = [
                                                 fixer.replaceTextRange(
                                                     [start, end],
-                                                    " ".repeat(
-                                                        spacesBeforeBrace,
-                                                    ),
+                                                    " ".repeat(spacesBeforeBrace),
                                                 ),
                                             ];
 
                                             // ensure exactly one space after the closing brace
-                                            const afterBraceStart =
-                                                closingBraceToken.range[1];
-                                            const afterBraceEnd =
-                                                fromToken.range[0];
+                                            const afterBraceStart = closingBraceToken.range[1];
+                                            const afterBraceEnd   = fromToken.range[0];
 
-                                            if (
-                                                afterBraceEnd > afterBraceStart
-                                            ) {
+                                            if (afterBraceEnd > afterBraceStart) {
                                                 fixes.push(
                                                     fixer.replaceTextRange(
-                                                        [
-                                                            afterBraceStart,
-                                                            afterBraceEnd,
-                                                        ],
+                                                        [afterBraceStart, afterBraceEnd],
                                                         " ",
                                                     ),
                                                 );
-                                            } else if (
-                                                afterBraceEnd ===
-                                                afterBraceStart
-                                            ) {
+                                            } else if (afterBraceEnd === afterBraceStart) {
                                                 fixes.push(
-                                                    fixer.insertTextAfter(
-                                                        closingBraceToken,
-                                                        " ",
-                                                    ),
+                                                    fixer.insertTextAfter(closingBraceToken, " "),
                                                 );
                                             }
 
                                             return fixes;
                                         }
                                     } else {
-                                        const prevToken =
-                                            sourceCode.getTokenBefore(
-                                                fromToken,
-                                            );
+                                        const prevToken = sourceCode.getTokenBefore(fromToken);
 
                                         if (prevToken) {
                                             const start        = prevToken.range[1];
@@ -309,8 +275,7 @@ export default {
                                             const targetSpaces = Math.max(
                                                 1,
                                                 group.targetFromPosition -
-                                                    (prevToken.range[1] -
-                                                        importNode.range[0]),
+                                                    (prevToken.range[1] - importNode.range[0]),
                                             );
 
                                             return fixer.replaceTextRange(
