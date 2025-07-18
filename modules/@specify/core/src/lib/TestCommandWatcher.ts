@@ -41,8 +41,7 @@ export class TestCommandWatcher {
      * Whether or not debug mode is enabled.
      *
      * @remarks
-     * The global debug setting is used, but it can be overridden by the watch
-     * configuration.
+     * The global debug setting takes precedence over the watch config setting.
      */
     #debug = this.#config.debug || this.#config.watch.debug;
 
@@ -99,7 +98,7 @@ export class TestCommandWatcher {
      */
     constructor(command: TestCommand) {
         this.#command = command;
-        this.#lockFilePath = path.join(os.tmpdir(), `specify-core-watch.lock`);
+        this.#lockFilePath = path.join(os.tmpdir(), "specify-core-watch.lock");
         this.#promptPrefix =
             chalk.cyan("[") + chalk.greenBright(PACKAGE_NAME) + chalk.cyan("]");
 
@@ -110,7 +109,7 @@ export class TestCommandWatcher {
     }
 
     /**
-     * Log debug messages when debug mode is enabled.
+     * Log debug messages when debug mode is enabled or force logging is requested.
      *
      * @param message - The debug message to log
      * @param data    - Optional additional data to log
@@ -131,7 +130,7 @@ export class TestCommandWatcher {
     }
 
     /**
-     * Execute the TestCommand with proper error handling and lock file management.
+     * Execute the TestCommand.
      *
      * @param args - Command line arguments to pass to the TestCommand
      */
@@ -172,7 +171,7 @@ export class TestCommandWatcher {
     }
 
     /**
-     * Check if the configuration file has changed based on the file path.
+     * Check if the configuration file has changed.
      */
     #hasConfigChanged(filePath: string): boolean {
         if (!this.#initialExecution) {
@@ -280,7 +279,7 @@ export class TestCommandWatcher {
     }
 
     /**
-     * Wait for the lock file to be removed before proceeding with execution.
+     * Wait for the lock file to be removed.
      */
     async #waitForLockFileRemoval(): Promise<void> {
         return new Promise<void>((resolve) => {
