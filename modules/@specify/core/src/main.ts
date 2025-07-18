@@ -8,7 +8,7 @@
 
 import minimist             from "minimist";
 import { log              } from "node:console";
-import path                 from "path";
+import path                 from "node:path";
 import { deserializeError } from "serialize-error";
 
 import { config                } from "@/config/all";
@@ -37,7 +37,7 @@ let cmd: Command;
 switch (args._[0]?.toLowerCase()) {
     case "test":
         args._.shift();
-    // fall through to default
+        // fall through to default
     default:
         cmd = new TestCommand({
             "cucumber":     config.cucumber,
