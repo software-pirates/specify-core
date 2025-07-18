@@ -36,6 +36,7 @@ export interface ICommandResultDebugInfo {
 }
 
 export interface ISpecifyArgs {
+    help?: boolean;
     watch?: boolean;
 }
 
