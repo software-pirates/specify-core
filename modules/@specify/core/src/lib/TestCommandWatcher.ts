@@ -149,7 +149,17 @@ export class TestCommandWatcher {
             const res = await this.#command.execute(args);
 
             if (res.error) {
-                throw deserializeError(res.error);
+                const resError     = deserializeError(res.error);
+                const errorMessage =
+                    resError instanceof Error
+                        ? resError.message
+                        : String(resError);
+
+                this.#debugLog(
+                    `Command execution failed: ${errorMessage}`,
+                    resError,
+                    true,
+                );
             }
         } catch (error) {
             this.#debugLog(
