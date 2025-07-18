@@ -300,9 +300,7 @@ export class TestCommandWatcher {
                     // there are only 2 event types here: rename and change
                     // rename indicates the file was deleted, moved, or otherwise isn't there anymore
                     if (eventType === "rename") {
-                        this.#debugLog(
-                            "Lock file removed, proceeding with queued execution.",
-                        );
+                        this.#debugLog("Lock file removed.");
 
                         watcher.close();
                         resolve();
