@@ -13,12 +13,12 @@ Feature: Basic Test Execution
         Scenario: All tests pass
             When a user runs the command "npx specify test ./assets/gherkin/binary/passing.feature"
             Then the command should exit with a "success" status code
-            And the console output should be a "passing test result"
+            And the last command's terminal output should be a "passing test result"
 
         Scenario: All tests fail
             When a user runs the command "npx specify test ./assets/gherkin/binary/failing.feature"
             Then the command should exit with a "failure" status code
-            And the console output should be a "failing test result"
+            And the last command's terminal output should be a "failing test result"
 
         Scenario: Mixed pass/fail tests
             When a user runs the command "npx specify test ./assets/gherkin/binary/"
@@ -42,25 +42,25 @@ Feature: Basic Test Execution
         Scenario: User-specified path does not exist
             When a user runs the command "npx specify test ./nonexistent/path/"
             Then the command should exit with a "error" status code
-            And the console output should be a "path not found error"
+            And the last command's terminal output should be a "path not found error"
 
         @skip
         Scenario: User-specified path is empty
             When a user runs the command "npx specify test ./assets/gherkin/empty/"
             Then the command should exit with a "error" status code
-            And the console output should be a "no test cases error"
+            And the last command's terminal output should be a "no test cases error"
 
         @skip
         Scenario: User-specified path contains no features
             When a user runs the command "npx specify test ./assets/gherkin/no-features/test.md"
             Then the command should exit with a "error" status code
-            And the console output should be a "no test cases error"
-        
+            And the last command's terminal output should be a "no test cases error"
+
         @skip
         Scenario: User-specified path contains no scenarios
             When a user runs the command "npx specify test ./assets/gherkin/empty.feature"
             Then the command should exit with an "failure" status code
-            And the console output should be a "no test cases error"
+            And the last command's terminal output should be a "no test cases error"
 
     Rule: Execution without a subcommand should default to testing
 
@@ -73,7 +73,7 @@ Feature: Basic Test Execution
         Scenario: Only run tests with the specified tag
             When a user runs the command "npx specify test --tags '@pass' ./assets/gherkin/binary/"
             Then the command should exit with a "success" status code
-        
+
         Scenario: Do not run tests with the specified inverted tag
             When a user runs the command "npx specify test --tags 'not @fail' ./assets/gherkin/binary/"
             Then the command should exit with a "success" status code
@@ -81,7 +81,7 @@ Feature: Basic Test Execution
         Scenario: Unmatched tags cause an error
             When a user runs the command "npx specify test --tags '@nevermatch'"
             Then the command should exit with a "error" status code
-            And the console output should be a "no test cases error"
+            And the last command's terminal output should be a "no test cases error"
 
     Rule: Invalid commands display usage help
 
@@ -89,16 +89,16 @@ Feature: Basic Test Execution
         Scenario: Unsupported subcommand
             When a user runs the command "npx specify bad-subcommand"
             Then the command should exit with a "failure" status code
-            And the console output should be a "invalid command message"
+            And the last command's terminal output should be a "invalid command message"
 
         @skip
         Scenario: Unsupported option
             When a user runs the command "npx specify --bad-option"
             Then the command should exit with a "failure" status code
-            And the console output should be a "invalid command message"
+            And the last command's terminal output should be a "invalid command message"
 
         @skip
         Scenario: Mix of supported and unsupported options
             When a user runs the command "npx specify --tag '@pass' --bad-option"
             Then the command should exit with a "failure" status code
-            And the console output should be a "invalid command message"
+            And the last command's terminal output should be a "invalid command message"

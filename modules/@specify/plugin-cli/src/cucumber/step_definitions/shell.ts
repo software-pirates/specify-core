@@ -16,7 +16,9 @@ When("a/the user runs the command {string}", { "timeout": 60000 }, runCommand);
 
 Then('the command should exit with a(n)/the "{ref:statusCode}" status code', verifyCLIStatusCode);
 
-Then('the console output should be a(n)/the "{ref:consoleOutput}"', verifyCLIOutput);
+Then("the last command's terminal output should be {string}", verifyCLIOutput);
+
+Then("the last command's terminal output should be a/an/the {ref:consoleOutput}", verifyCLIOutput);
 
 /**
  * Run the given command via the CLI
@@ -42,7 +44,11 @@ function setupCLI(): void {
  *
  * @throws if the matcher regexp wasnt found
  */
-function verifyCLIOutput(consoleOutput: RegExp) {
+function verifyCLIOutput(consoleOutput: RegExp | string) {
+    if (typeof consoleOutput === "string") {
+        consoleOutput = new RegExp(consoleOutput, "u");
+    }
+
     assert.ok(
         consoleOutput.test(this.cli.shell.output),
         new AssertionError({
