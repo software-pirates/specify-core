@@ -19,13 +19,13 @@ Feature: Retry Flaky Tests
         @skip
         Scenario: A test run that fails with 2 retries
             Given that a "3rd retry passing feature" file exists at "./features"
-            When a user runs the command "npx specify test --retry 2"
+            When a user runs the command "npx specify test --retry 2" and waits for it to complete
             Then the command should return a "failure" exit code
 
         @skip
         Scenario: A test run that passes with 3 retries
             Given that a "3rd retry passing feature" file exists at "./features"
-            When a user runs the command "npx specify test --retry 3"
+            When a user runs the command "npx specify test --retry 3" and waits for it to complete
             Then the command should return a "success" exit code
 
     Rule: Tags can be used to limit retries to specific tests
@@ -34,7 +34,7 @@ Feature: Retry Flaky Tests
         Scenario: Retry-tag limits retries to matching tagged tests
             Given that a "3rd retry passing feature" file exists at "./features"
             And that a "5 second failing feature" file exists at "./features"
-            When a user runs the command "npx specify test --retry 3 --retry-tag '@retry'"
+            When a user runs the command "npx specify test --retry 3 --retry-tag '@retry'" and waits for it to complete
             Then the command should return a "failure" exit code
             And the elapsed time should be less than "10" seconds
     
@@ -42,19 +42,19 @@ Feature: Retry Flaky Tests
 
         @skip
         Scenario: Multiple integers are rejected
-            When a user runs the command "npx specify test --retry 1 2"
+            When a user runs the command "npx specify test --retry 1 2" and waits for it to complete
             Then the command should return an "error" exit code
             And the console output should be a "help message"
         
         @skip
         Scenario: Floats are rejected
-            When a user runs the command "npx specify test --retry 0.5"
+            When a user runs the command "npx specify test --retry 0.5" and waits for it to complete
             Then the command should return an "error" exit code
             And the console output should be a "help message"
         
         @skip
         Scenario: Text is rejected
-            When a user runs the command "npx specify test --retry 'bad-value'"
+            When a user runs the command "npx specify test --retry 'bad-value'" and waits for it to complete
             Then the command should return an "error" exit code
             And the console output should be a "help message"
     
@@ -62,7 +62,7 @@ Feature: Retry Flaky Tests
 
         @skip
         Scenario: Invalid tags are rejected
-            When a user runs the command "npx specify test --retry-tag 'bad-tag'"
+            When a user runs the command "npx specify test --retry-tag 'bad-tag'" and waits for it to complete
             Then the command should return an "error" exit code
             And the console output should be a "help message"
     

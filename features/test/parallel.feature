@@ -12,7 +12,7 @@ Feature: Parallel Execution
 
         @skip
         Scenario: Serial execution takes more than 10 seconds
-            When a user runs the command "npx specify test ./assets/gherkin/slow/"
+            When a user runs the command "npx specify test ./assets/gherkin/slow/" and waits for it to complete
             Then the command should return a "failure" exit code
             And the elapsed time should be greater than 10 seconds
 
@@ -20,13 +20,13 @@ Feature: Parallel Execution
 
         @skip
         Scenario: Parallel execution takes less than 6 seconds
-            When a user runs the command "npx specify test --parallel 2 ./assets/gherkin/slow/"
+            When a user runs the command "npx specify test --parallel 2 ./assets/gherkin/slow/" and waits for it to complete
             Then the command should return a "failure" exit code
             And the elapsed time should be less than 6 seconds
 
         @skip @review
         Scenario: Parallel option defaults to a value of one less than total CPU cores
-            When a user runs the command "npx specify test --parallel"
+            When a user runs the command "npx specify test --parallel" and waits for it to complete
             Then the command should return a "success" exit code
             And the elapsed time should be less than 6 seconds
 
@@ -34,13 +34,13 @@ Feature: Parallel Execution
 
         @skip
         Scenario: Floats are rejected
-            When a user runs the command "npx specify test --parallel 0.5"
+            When a user runs the command "npx specify test --parallel 0.5" and waits for it to complete
             Then the command should return an "error" exit code
             And the console output should be a "help message"
 
         @skip
         Scenario: Non-numeric values are rejected
-            When a user runs the command "npx specify test --parallel 'bad-value'"
+            When a user runs the command "npx specify test --parallel 'bad-value'" and waits for it to complete
             Then the command should return an "error" exit code
             And the console output should be a "help message"
 

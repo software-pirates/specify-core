@@ -14,8 +14,8 @@ Feature: Rerun Failed Tests
         Scenario: Only failed tests are rerun
             Given that a "passing feature" file exists at "./features"
             And that a "failing feature" file exists at "./features"
-            When a user runs the command "npx specify test"
-            And a user runs the command "npx specify test --rerun"
+            When a user runs the command "npx specify test" and waits for it to complete
+            And a user runs the command "npx specify test --rerun" and waits for it to complete
             Then the command should return a "failure" exit code
             And the console output should include "failing test result"
             And the console output should not include "passing test result"
@@ -23,23 +23,23 @@ Feature: Rerun Failed Tests
         @skip
         Scenario: No tests are rerun after a 100% passing run
             Given that a "passing feature" file exists at "./features"
-            When a user runs the command "npx specify test"
-            And a user runs the command "npx specify test --rerun"
+            When a user runs the command "npx specify test" and waits for it to complete
+            And a user runs the command "npx specify test --rerun" and waits for it to complete
             Then the command should return an "error" exit code
             And the console output should be a "no tests to rerun"
         
         @skip
         Scenario: A previously failing test passes after a rerun
             Given that a "failing feature" file exists at "./features"
-            When a user runs the command "npx specify test"
+            When a user runs the command "npx specify test" and waits for it to complete
             And the code under test is modified so the issue is resolved
-            And the user runs the command "npx specify test --rerun"
+            And the user runs the command "npx specify test --rerun" and waits for it to complete
             Then the command should return a "success" exit code
             And the console output should include "passing test result"
 
         @skip
         Scenario: Rerun is attempted with no prior test run
             Given that a "failing feature" file exists at "./features"
-            When the user runs the command "npx specify test --rerun"
+            When the user runs the command "npx specify test --rerun" and waits for it to complete
             Then the command should return an "error" exit code
             And the console output should be a "no tests to rerun"

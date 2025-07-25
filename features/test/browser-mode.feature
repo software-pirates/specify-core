@@ -14,7 +14,7 @@ Feature: Browser Testing Mode
 
         @skip @manual
         Scenario: Headless testing is the default
-            When a user runs the command "npx specify test"
+            When a user runs the command "npx specify test" and waits for it to complete
             Then a browser window should not open
             And the command should return a "success" exit code
 
@@ -22,26 +22,26 @@ Feature: Browser Testing Mode
 
         @skip @manual
         Scenario: Headless testing is local
-            When a user runs the command "npx specify test --headless"
+            When a user runs the command "npx specify test --headless" and waits for it to complete
             Then the command should return a "success" exit code
             And the test ran locally
 
         @skip @manual
         Scenario: Headless testing is not visible
-            When a user runs the command "npx specify test --headless"
+            When a user runs the command "npx specify test --headless" and waits for it to complete
             Then a browser window should not open
     
     Rule: Visual mode testing is local and visible
 
         @skip @manual
         Scenario: Visual testing is local
-            When a user runs the command "npx specify test --visual"
+            When a user runs the command "npx specify test --visual" and waits for it to complete
             Then the command should return a "success" exit code
             And the test ran locally
         
         @skip @manual
         Scenario: Visual testing is visible
-            When a user runs the command "npx specify test --visual"
+            When a user runs the command "npx specify test --visual" and waits for it to complete
             Then a browser window should open
 
     Rule: Grid mode testing is remote
@@ -49,14 +49,14 @@ Feature: Browser Testing Mode
         @skip @manual
         Scenario: Grid testing is remote
             Given that a Selenium Grid is available at "http://localhost:4444"
-            When a user runs the command "npx specify test --grid http://localhost:4444"
+            When a user runs the command "npx specify test --grid http://localhost:4444" and waits for it to complete
             Then the Selenium Grid should execute the tests
             And the command should return a "success" exit code
 
         @skip @manual
         Scenario: Grid testing fails without a grid
             Given that a Selenium Grid is not available at "http://localhost:4444"
-            When the user runs the command "npx specify test --grid http://localhost:4444"
+            When the user runs the command "npx specify test --grid http://localhost:4444" and waits for it to complete
             Then the command should return an "error" exit code
             And the console output should include "unable to connect to Selenium Grid"
         
@@ -67,12 +67,12 @@ Feature: Browser Testing Mode
 
         @skip
         Scenario: Using both --visual and --headless
-            When a user runs the command "npx specify test --visual --headless"
+            When a user runs the command "npx specify test --visual --headless" and waits for it to complete
             Then the command should return an "error" exit code
             And the console output should include "conflicting browser mode options"
         
         @skip
         Scenario: Using both --visual and --grid
-            When a user runs the command "npx specify test --visual --grid"
+            When a user runs the command "npx specify test --visual --grid" and waits for it to complete
             Then the command should return an "error" exit code
             And the console output should include "conflicting browser mode options"

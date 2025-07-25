@@ -25,12 +25,11 @@ describe("SessionManager", () => {
     describe("exitCode", () => {
         it("returns the last command's exit code", async () => {
             sessionManager.addSession(session);
-
-            const promise = sessionManager.run("echo test");
+            sessionManager.run("echo test");
 
             session.emitDelimiter(0);
 
-            await promise;
+            await sessionManager.waitForReturn();
 
             expect(sessionManager.exitCode).toBe(0);
         });
@@ -57,40 +56,40 @@ describe("SessionManager", () => {
             it("...the output is a single line", async () => {
                 const output  = "test";
                 const command = `echo ${output}`;
-                const promise = sessionManager.run(command);
+
+                sessionManager.run(command);
 
                 session.emitOutput(output);
                 session.emitDelimiter(0);
 
-                await promise;
+                await sessionManager.waitForReturn();
 
                 expect(sessionManager.output).toBe(output);
             });
 
             it("...the output is multiple lines", async () => {
-                const output  = ["test 1", "test 2"];
-                const promise = sessionManager.run("some-command");
+                const output = ["test 1", "test 2"];
+
+                sessionManager.run("some-command");
 
                 session.emitOutput(output[0]);
                 session.emitOutput(output[1]);
                 session.emitDelimiter(0);
 
-                await promise;
+                await sessionManager.waitForReturn();
 
                 expect(sessionManager.output).toBe(output.join("\n"));
             });
-        });
 
-        it("returns an empty string when the last command had no output", async () => {
-            sessionManager.addSession(session);
+            it("...there is no output", async () => {
+                sessionManager.run("cd .");
 
-            const promise = sessionManager.run("cd .");
+                session.emitDelimiter(0);
 
-            session.emitDelimiter(0);
+                await sessionManager.waitForReturn();
 
-            await promise;
-
-            expect(sessionManager.output).toBe("");
+                expect(sessionManager.output).toBe("");
+            });
         });
 
         describe("returns undefined when...", () => {
@@ -239,7 +238,7 @@ describe("SessionManager", () => {
             sessionManager.addSession(session);
         });
 
-        it("removes the sole managed session", async () => {
+        it("removes the sole managed session", () => {
             expect(sessionManager.sessions.length).toBe(1);
 
             sessionManager.removeSession();
@@ -248,7 +247,7 @@ describe("SessionManager", () => {
             expect(sessionManager.activeSession).toBeNull();
         });
 
-        it("removes one managed session among several", async () => {
+        it("removes one managed session among several", () => {
             const altSession = new ShellSession() as unknown as MockShellSession;
 
             sessionManager.addSession(altSession, "whatever", false);
@@ -262,7 +261,7 @@ describe("SessionManager", () => {
             expect(sessionManager.activeSession.session).toBe(session);
         });
 
-        it("removes the active session among several", async () => {
+        it("removes the active session among several", () => {
             const altSession = new ShellSession() as unknown as MockShellSession;
 
             sessionManager.addSession(altSession);
@@ -285,52 +284,59 @@ describe("SessionManager", () => {
         it("writes command to session and resolves after delimiter", async () => {
             const output  = "test";
             const command = `echo ${output}`;
-            const promise = sessionManager.run(command);
+
+            sessionManager.run(command);
 
             session.emitOutput(output);
             session.emitDelimiter(0);
 
-            await promise;
+            await sessionManager.waitForReturn();
 
             expect(session.write).toHaveBeenCalledWith(expect.stringContaining(command));
         });
 
-        it("resolves when delimiter output is received", async () => {
-            let resolved = false;
+        it("throws if called while another command is in progress", () => {
+            const command = 'echo "long-running command"';
 
-            const promise = sessionManager.run("echo test").then(() => (resolved = true));
+            // this promise will never resolve due to the throw
+            sessionManager.run(command);
+
+            expect(() => sessionManager.run('echo "overlapping command"')).toThrow(
+                `A command is already running: ${command}`,
+            );
+        });
+    });
+
+    describe("waitForReturn()", () => {
+        beforeEach(() => {
+            sessionManager.addSession(session);
+        });
+
+        it("resolves when delimiter output is received", async () => {
+            sessionManager.run("echo test");
 
             session.emitOutput("test");
 
             // wait arbitrary time to ensure promise hasn't resolved
             await new Promise((resolve) => setTimeout(resolve, 100));
 
-            expect(resolved).toBeFalsy();
+            expect(sessionManager.exitCode).toBeUndefined();
 
             session.emitDelimiter(0);
 
-            await promise;
+            await sessionManager.waitForReturn();
 
-            expect(resolved).toBeTruthy();
+            expect(sessionManager.exitCode).toBeDefined();
         });
 
         it("throws if output contains malformed delimiter", async () => {
             // this promise will never resolve because malformed delimiter doesn't trigger resolution
-            void sessionManager.run("echo bad");
+            sessionManager.run("echo bad");
 
-            expect(() => {
-                session.emitDelimiter(0, true);
-            }).toThrow(/^Output does not contain a value for ".+"$/);
-        });
+            session.emitDelimiter(0, true);
 
-        it("throws if called while another command is in progress", async () => {
-            const command = 'echo "long-running command"';
-
-            // this promise will never resolve due to the throw
-            void sessionManager.run(command);
-
-            await expect(sessionManager.run('echo "overlapping command"')).rejects.toThrow(
-                `A command is already running: ${command}`,
+            await expect(async () => sessionManager.waitForReturn()).rejects.toThrow(
+                /^Output does not contain a value for ".+"$/,
             );
         });
     });
