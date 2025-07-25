@@ -98,11 +98,11 @@ export default tseslint.config(
             "**/*.d.ts",
             "**/.DS_Store/**",
             "**/.vscode/**",
+            "**/logs/**",
             "**/node_modules/**",
             "**/dist/**",
             "**/package.json",
             "**/package-lock.json",
-            "logs/",
         ],
     },
 );

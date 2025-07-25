@@ -1,7 +1,29 @@
 {
+    "cucumber": {
+        "format": [ "progress" ],
+        "parallel": 3
+    },
     "debug": false,
     "paths": {
         "logs": "./logs"
+    },
+    "watch": {
+        "paths": [
+            "./features",
+            "./modules/@specify/core/dist",
+            "./modules/@specify/plugin-cli/dist",
+            "./modules/@specify/quick-ref/dist"
+        ],
+        "ignore": [
+            "\\/logs\\/",
+            "\\.test\\.ts$",
+            "\\.spec\\.ts$",
+            "__tests__",
+            "__mocks__",
+            "\\.d\\.ts$",
+            "\\/node_modules\\/",
+            "\\.git"
+        ]
     },
     "plugins": [ "@specify/plugin-cli" ]
 }

@@ -14,7 +14,7 @@ import { serializeError } from "serialize-error";
 
 import { loadConfiguration, loadSupport, runCucumber } from "@cucumber/cucumber/api";
 
-import { Command, CommandResultStatus } from "./Command";
+import { Command, CommandResultStatus, SPECIFY_ARGS } from "./Command";
 
 import type { ParsedArgs } from "minimist";
 
@@ -41,8 +41,9 @@ export const TEST_COMMAND_DEFAULT_OPTS: ITestCommandOptions = {
 };
 
 export interface ITestCommandOptions extends ICommandOptions {
-    cucumber: Partial<IConfiguration>;
-    gherkinPaths: string[];
+    cucumber?: Partial<IConfiguration>;
+    gherkinPaths?: string[];
+    plugins?: string[];
 }
 
 export interface ITestCommandResult extends ICommandResult {
@@ -83,14 +84,17 @@ export class TestCommand extends Command {
      *
      * @param userOpts - User-supplied options
      */
-    constructor(userOpts: Partial<ITestCommandOptions>) {
+    constructor(userOpts: ITestCommandOptions) {
         const mergedOpts = merge.all([
             {},
             TEST_COMMAND_DEFAULT_OPTS,
             userOpts,
         ]) as ITestCommandOptions;
 
-        super({ "debug": mergedOpts.debug, "logPath": mergedOpts.logPath });
+        super({
+            "debug":   mergedOpts.debug,
+            "logPath": mergedOpts.logPath,
+        });
 
         this.cucumber = mergedOpts.cucumber;
         this.gherkinPaths = mergedOpts.gherkinPaths;
@@ -122,7 +126,10 @@ export class TestCommand extends Command {
      * @returns The Command result
      */
     async execute(userArgs: ParsedArgs): Promise<ITestCommandResult> {
-        const testRes: ITestCommandResult = { "ok": false, "status": CommandResultStatus.error };
+        const testRes: ITestCommandResult = {
+            "ok":     false,
+            "status": CommandResultStatus.error,
+        };
 
         if (this.debug) {
             testRes.debug = { "args": userArgs };
@@ -200,7 +207,10 @@ export class TestCommand extends Command {
                     config.paths = this.#parsePathArgs(optVal);
                     break;
                 default:
-                    throw new Error(`Invalid option: --${optKey}`);
+                    // only throw for non-Cucumber args that are not our own custom execution args
+                    if (!SPECIFY_ARGS.includes(optKey)) {
+                        throw new Error(`Invalid option: --${optKey}`);
+                    }
             }
         }
 

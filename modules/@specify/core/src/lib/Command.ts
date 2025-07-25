@@ -16,9 +16,11 @@ export const COMMAND_DEFAULT_OPTS: ICommandOptions = {
     "logPath": `./specify-log-${Date.now()}.json`,
 };
 
+export const SPECIFY_ARGS = ["help", "watch"];
+
 export interface ICommandOptions {
-    debug: boolean;
-    logPath: string;
+    debug?: boolean;
+    logPath?: string;
 }
 
 export interface ICommandResult {
@@ -31,6 +33,11 @@ export interface ICommandResult {
 
 export interface ICommandResultDebugInfo {
     args: ParsedArgs;
+}
+
+export interface ISpecifyArgs {
+    help?: boolean;
+    watch?: boolean;
 }
 
 export enum CommandResultStatus {
@@ -55,7 +62,7 @@ export abstract class Command {
      *
      * @param userOpts - User-supplied options
      */
-    constructor(userOpts: Partial<ICommandOptions>) {
+    constructor(userOpts: ICommandOptions) {
         const mergedOpts = merge.all([{}, COMMAND_DEFAULT_OPTS, userOpts]) as ICommandOptions;
 
         this.debug = mergedOpts.debug;

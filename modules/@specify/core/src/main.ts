@@ -12,13 +12,26 @@ import { log              } from "node:console";
 import path                 from "node:path";
 import { deserializeError } from "serialize-error";
 
-import { config  } from "@/config/all";
-import { Command } from "./lib/Command";
+import { config                } from "@/config/all";
+import { Command, SPECIFY_ARGS } from "./lib/Command";
+import { TestCommandWatcher    } from "./lib/TestCommandWatcher";
+
+import type { ISpecifyArgs } from "./lib/Command";
 
 import { TestCommand, TEST_COMMAND_DEFAULT_OPTS } from "./lib/TestCommand";
 
-const minOpts = {};
-const args    = minimist(process.argv.slice(2), minOpts);
+const getSpecifyArgs = (args: minimist.ParsedArgs): ISpecifyArgs => {
+    return Object.entries(args)
+        .filter(([key]) => SPECIFY_ARGS.includes(key))
+        .reduce((acc, [key, value]) => {
+            acc[key] = value;
+            return acc;
+        }, {});
+};
+
+const minOpts     = { "boolean": SPECIFY_ARGS };
+const args        = minimist(process.argv.slice(2), minOpts);
+const specifyArgs = getSpecifyArgs(args);
 
 let cucumberCfg = config.cucumber;
 let cmd: Command;
@@ -52,10 +65,16 @@ switch (args._[0]?.toLowerCase()) {
         });
 }
 
-const res = await cmd.execute(args);
+if (specifyArgs.watch) {
+    const watcher = new TestCommandWatcher(cmd as TestCommand);
 
-if (res.error) {
-    log(res.debug ? deserializeError(res.error) : deserializeError(res.error).message);
+    await watcher.start(args);
+} else {
+    const res = await cmd.execute(args);
+
+    if (res.error) {
+        log(res.debug ? deserializeError(res.error) : deserializeError(res.error).message);
+    }
+
+    process.exit(res.status);
 }
-
-process.exit(res.status);
