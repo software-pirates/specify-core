@@ -9,11 +9,10 @@ import fs              from "node:fs/promises";
 import path            from "node:path";
 
 import type { FileParam } from "~/types/params";
-// import type { ObjectEncodingOptions } from "node:fs";
 
-Given('that a(n) "{ref:file}" file exists at "{path}"', copyFile);
+Given("that a(n) {ref:file} file exists at {path}", copyFile);
 
-When('a/the user puts a(n) "{ref:file}" file in "{path}"', copyFile);
+When("a/the user puts a(n) {ref:file} file in {path}", copyFile);
 
 /**
  * Copies an existing file to a specific file system location. Will not overwrite

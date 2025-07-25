@@ -6,7 +6,7 @@ Feature: Rerun Failed Tests
     Background:
         Given that the "@specify/core" NPM package is installed
         And that the "@specify/plugin-cli" NPM package is installed
-        And that a command line prompt is available
+        And a CLI shell
 
     Rule: Failed tests can be targeted for reruns
 
@@ -16,7 +16,7 @@ Feature: Rerun Failed Tests
             And that a "failing feature" file exists at "./features"
             When a user runs the command "npx specify test"
             And a user runs the command "npx specify test --rerun"
-            Then the command should exit with a "failure" status code
+            Then the command should return a "failure" exit code
             And the console output should include "failing test result"
             And the console output should not include "passing test result"
 
@@ -25,7 +25,7 @@ Feature: Rerun Failed Tests
             Given that a "passing feature" file exists at "./features"
             When a user runs the command "npx specify test"
             And a user runs the command "npx specify test --rerun"
-            Then the command should exit with an "error" status code
+            Then the command should return an "error" exit code
             And the console output should be a "no tests to rerun"
         
         @skip
@@ -34,12 +34,12 @@ Feature: Rerun Failed Tests
             When a user runs the command "npx specify test"
             And the code under test is modified so the issue is resolved
             And the user runs the command "npx specify test --rerun"
-            Then the command should exit with a "success" status code
+            Then the command should return a "success" exit code
             And the console output should include "passing test result"
 
         @skip
         Scenario: Rerun is attempted with no prior test run
             Given that a "failing feature" file exists at "./features"
             When the user runs the command "npx specify test --rerun"
-            Then the command should exit with an "error" status code
+            Then the command should return an "error" exit code
             And the console output should be a "no tests to rerun"

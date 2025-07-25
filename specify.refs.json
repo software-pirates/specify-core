@@ -9,7 +9,7 @@
             "sourcePath": "./assets/tests/passing.feature"
         }
     },
-    "statusCode": {
+    "exitCode": {
         "error":   2,
         "failure": 1,
         "success": 0

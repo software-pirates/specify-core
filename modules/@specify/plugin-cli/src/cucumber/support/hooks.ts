@@ -23,7 +23,8 @@ Before({ "name": "CLI plugin before hook" }, async function () {
 });
 
 After({ "name": "CLI plugin after hook" }, async function () {
-    // after actions
+    // terminate any remaining shell sessions
+    await this.cli.manager?.killAll();
 });
 
 AfterAll(async function () {
