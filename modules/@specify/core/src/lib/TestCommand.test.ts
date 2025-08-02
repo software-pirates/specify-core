@@ -1,133 +1,141 @@
-import merge from "deepmerge";
-import fs    from "node:fs";
-import path  from "node:path";
+import path                 from "node:path";
+import { deserializeError } from "serialize-error";
 
-import { TestCommand, TestCommandOptions, TEST_COMMAND_DEFAULT_OPTS } from "./TestCommand";
+import { TestCommand, TestCommandOptions } from "./TestCommand";
+import { CucumberTool                    } from "./CucumberTool";
+
+const { mockRunCucumber, mockLoadConfiguration, mockLoadSupport } = vi.hoisted(() => {
+    return {
+        "mockRunCucumber":       vi.fn(),
+        "mockLoadConfiguration": vi.fn(async (config) => ({
+            "sources": config,
+        })),
+        "mockLoadSupport": vi.fn(),
+    };
+});
+
+vi.mock("./CucumberTool", () => ({
+    "CucumberTool": {
+        "loadConfiguration": mockLoadConfiguration,
+        "loadSupport":       mockLoadSupport,
+        "runCucumber":       mockRunCucumber,
+    },
+}));
 
 describe("TestCommand", () => {
     const emptyArgs = { "_": [] };
-    const emptyOpts = {};
 
-    describe("constructor()", () => {
-        describe("iniitializes options...", () => {
-            it("...with defaults when no user options are provided", () => {
-                const expOpts = merge({}, TEST_COMMAND_DEFAULT_OPTS);
-                const cmd     = new TestCommand(emptyOpts);
-
-                // default options get augmented with cucumber formatters for the log and tmp paths
-                expOpts.cucumber.format.push(["json", cmd.logPath], ["json", cmd.tmpPath]);
-
-                expect(cmd.cucumber).toEqual(expOpts.cucumber);
-                expect(cmd.gherkinPaths).toEqual(expOpts.gherkinPaths);
-            });
-
-            it("...with merged values when user options are provided", () => {
-                const userOpts = { "gherkinPaths": ["./fake/path"] };
-                const cmd      = new TestCommand(userOpts);
-
-                expect(cmd.gherkinPaths).toEqual(userOpts.gherkinPaths);
-            });
-        });
+    afterEach(() => {
+        vi.resetAllMocks();
     });
 
-    // these tests run Cucumber and are best understood as integration tests until the underlying code has been
-    // refactored
     describe("execute()", () => {
         describe("parses command arguments", () => {
-            describe("paths", () => {
-                it("valid", async () => {
-                    const featPath = "./assets/gherkin/binary/passing.feature:3";
-                    const userArgs = { "_": [featPath] };
-                    const userOpts = { "debug": true };
-                    const cmd      = new TestCommand(userOpts);
-                    const res      = await cmd.execute(userArgs);
+            it("paths", async () => {
+                const featPath = "./assets/gherkin/binary/passing.feature";
+                const userArgs = { "_": [featPath] };
+                const cmd      = new TestCommand();
 
-                    expect(res.status).toBe(1); // no support code imported, so steps are undefined
-                    expect(res.debug?.args).toBe(userArgs);
-                    expect(res.debug?.cucumber?.runConfiguration?.sources?.paths).toEqual([
-                        path.resolve(featPath),
-                    ]);
-                });
+                await cmd.execute(userArgs);
 
-                it("invalid", async () => {
-                    const userArgs = { "_": ["./path/that/doesnt/exist/"] };
-                    const cmd      = new TestCommand(emptyOpts);
-                    const res      = await cmd.execute(userArgs);
-
-                    expect(res.error.message).toMatch(/Invalid path:/);
-                });
+                expect(CucumberTool.loadConfiguration).toHaveBeenCalledWith(
+                    expect.objectContaining({
+                        "paths": [path.resolve(featPath)],
+                    }),
+                );
             });
 
             it("tags", async () => {
                 const userArgs = { "tags": ["@foo", "not @bar"], ...emptyArgs };
                 const userOpts = { "debug": true };
                 const cmd      = new TestCommand(userOpts);
-                const res      = await cmd.execute(userArgs);
 
-                expect(res.status).toBe(2); // no scenarios should match these tags
-                expect(res.debug?.args).toBe(userArgs);
-                expect(res.debug?.cucumber?.runConfiguration?.sources?.tagExpression).toBe(
-                    "(@foo) and (not @bar)",
+                await cmd.execute(userArgs);
+
+                expect(CucumberTool.loadConfiguration).toHaveBeenCalledWith(
+                    expect.objectContaining({
+                        "tags": "(@foo) and (not @bar)",
+                    }),
                 );
             });
         });
 
-        describe("runs tests", () => {
-            let userOpts: Partial<TestCommandOptions> = {};
+        describe("returns", () => {
+            const userOpts: Partial<TestCommandOptions> = {
+                "cucumber": {
+                    "import": [path.resolve(import.meta.dirname, "../../dist/cucumber")],
+                },
+                "logPath": path.resolve(`./logs/specify-test-vitest-log-${Date.now()}.json`),
+            };
 
-            beforeAll(() => {
-                userOpts = {
-                    "cucumber": {
-                        "import": [path.resolve(import.meta.dirname, "../../dist/cucumber")],
-                    },
-                    "logPath": path.resolve(`./logs/specify-test-vitest-log-${Date.now()}.json`),
-                };
+            describe("test results", () => {
+                it("passing", async () => {
+                    const userArgs = { "_": ["./assets/gherkin/binary/passing.feature"] };
+                    const cmd      = new TestCommand(userOpts);
+
+                    mockRunCucumber.mockResolvedValueOnce({
+                        "success": true,
+                    });
+
+                    const res = await cmd.execute(userArgs);
+
+                    expect(res.ok).toBe(true);
+                    expect(res.status).toBe(0);
+                });
+
+                it("failing", async () => {
+                    const userArgs = { "_": ["./assets/gherkin/binary/failing.feature"] };
+                    const cmd      = new TestCommand(userOpts);
+
+                    mockRunCucumber.mockResolvedValueOnce({
+                        "success": false,
+                    });
+
+                    const res = await cmd.execute(userArgs);
+
+                    expect(res.ok).toBe(false);
+                    expect(res.status).toBe(1);
+                });
             });
 
-            it("pass", async () => {
-                const userArgs = { "_": ["./assets/gherkin/binary/passing.feature"] };
-                const cmd      = new TestCommand(userOpts);
-                const res      = await cmd.execute(userArgs);
+            describe("errors", () => {
+                it("any error reports error status", async () => {
+                    mockRunCucumber.mockRejectedValueOnce(Error("test"));
 
-                expect(fs.existsSync(cmd.logPath)).toBe(true);
+                    const res = await new TestCommand().execute(emptyArgs);
 
-                const logFileText = fs.readFileSync(cmd.logPath, { "encoding": "utf8" });
-                const logFileJSON = JSON.parse(logFileText);
+                    expect(res.ok).toBe(false);
+                    expect(res.status).toBe(2);
+                });
 
-                expect(res.ok).toBe(true);
-                expect(res.status).toBe(0);
-                expect(res.result).toEqual(logFileJSON);
-            });
+                it("no executed tests", async () => {
+                    const error    = Error("No tests were executed.");
+                    const userArgs = { "_": ["./assets/gherkin/empty"] };
 
-            it("fail", async () => {
-                const userArgs = { "_": ["./assets/gherkin/binary/failing.feature"] };
-                const cmd      = new TestCommand(userOpts);
-                const res      = await cmd.execute(userArgs);
+                    mockRunCucumber.mockRejectedValueOnce(error);
 
-                expect(fs.existsSync(cmd.logPath)).toBe(true);
+                    const res = await new TestCommand().execute(userArgs);
 
-                const logFileText = fs.readFileSync(cmd.logPath, { "encoding": "utf8" });
-                const logFileJSON = JSON.parse(logFileText);
+                    expect(deserializeError(res.error)).toEqual(error);
+                });
 
-                expect(res.ok).toBe(false);
-                expect(res.status).toBe(1);
-                expect(res.result).toEqual(logFileJSON);
-            });
+                it("unsupported command option", async () => {
+                    const error    = Error("Invalid option: --bad");
+                    const userArgs = { ...emptyArgs, "bad": "test" };
 
-            it("error", async () => {
-                const userArgs = { "_": ["./assets/gherkin/empty"] };
-                const cmd      = new TestCommand(userOpts);
-                const res      = await cmd.execute(userArgs);
+                    const res = await new TestCommand().execute(userArgs);
 
-                expect(fs.existsSync(cmd.logPath)).toBe(true);
+                    expect(deserializeError(res.error)).toEqual(error);
+                });
 
-                const logFileText = fs.readFileSync(cmd.logPath, { "encoding": "utf8" });
-                const logFileJSON = JSON.parse(logFileText);
+                it("invalid test file path", async () => {
+                    const error    = Error("Invalid path: ./path/that/doesnt/exist/");
+                    const userArgs = { "_": ["./path/that/doesnt/exist/"] };
 
-                expect(res.ok).toBe(false);
-                expect(res.status).toBe(2);
-                expect(res.error).toBeTruthy();
-                expect(res.result).toEqual(logFileJSON);
+                    const res = await new TestCommand().execute(userArgs);
+
+                    expect(deserializeError(res.error)).toEqual(error);
+                });
             });
         });
     });

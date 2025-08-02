@@ -9,12 +9,10 @@ import merge              from "deepmerge";
 import assert             from "node:assert/strict";
 import fs                 from "node:fs";
 import path               from "node:path";
-import os                 from "node:os";
 import { serializeError } from "serialize-error";
 
-import { loadConfiguration, loadSupport, runCucumber } from "@cucumber/cucumber/api";
-
 import { Command, CommandResultStatus, SPECIFY_ARGS } from "./Command";
+import { CucumberTool                               } from "./CucumberTool";
 
 import type { ParsedArgs } from "minimist";
 
@@ -23,7 +21,6 @@ import type {
     IRunConfiguration,
     IRunEnvironment,
     IRunResult,
-    ISupportCodeLibrary,
 } from "@cucumber/cucumber/api";
 
 import type { CommandOptions, CommandResult, CommandResultDebugInfo } from "./Command";
@@ -70,21 +67,11 @@ export class TestCommand extends Command {
     gherkinPaths: string[];
 
     /**
-     * Cucumber support code, which must be reused across executions
-     */
-    support: ISupportCodeLibrary;
-
-    /**
-     * The file system temporary path to write result output to.
-     */
-    tmpPath: string;
-
-    /**
      * Parse user arguments and options data to prepare operational parameters
      *
      * @param userOpts - User-supplied options
      */
-    constructor(userOpts: TestCommandOptions) {
+    constructor(userOpts: TestCommandOptions = {}) {
         const mergedOpts = merge.all([
             {},
             TEST_COMMAND_DEFAULT_OPTS,
@@ -98,28 +85,15 @@ export class TestCommand extends Command {
 
         this.cucumber = mergedOpts.cucumber;
         this.gherkinPaths = mergedOpts.gherkinPaths;
-        this.tmpPath = path.join(
-            fs.mkdtempSync(path.join(os.tmpdir(), "specify-test-")),
-            `${Date.now()}.json`,
-        );
 
-        // these Cucumber formatters ensure that test result details are logged in some permanent form; the former is
-        // for users' purposes, while the latter is for internal use
+        // Cucumber formatters ensure that user's test result details are logged
+        // in some permanent form
         this.cucumber.format.push(["json", this.logPath]);
-        this.cucumber.format.push(["json", this.tmpPath]);
     }
 
     /**
      * Execute tests with Cucumber.  Consider a no-op result from Cucumber to
      * be an error condition.
-     *
-     * @remarks
-     * Cucumber's support code import logic doesn't work properly across
-     * multiple executions due to Node.js's caching of module exports.  To work
-     * around this, we need to pre-load support code and reuse it for all
-     * executions or test runs after the first will fail with unsupported steps.
-     *
-     * @see {@link https://github.com/cucumber/cucumber-js/blob/main/docs/javascript_api.md#preloading-and-reusing-support-code|Cucumber.js Javascript API documentation}
      *
      * @param userArgs - User-supplied arguments
      *
@@ -136,43 +110,27 @@ export class TestCommand extends Command {
         }
 
         try {
-            const cucumberConfig = await this.#buildCucumberConfig(userArgs);
-            const cucumberEnv    = { "debug": this.debug };
+            const cucumberConfig    = this.#buildCucumberConfig(userArgs);
+            const cucumberRunConfig = await CucumberTool.loadConfiguration(cucumberConfig);
+            const cucumberEnv       = { "debug": this.debug };
 
             if (this.debug) {
                 testRes.debug.cucumber = {
-                    "runConfiguration": cucumberConfig,
+                    "runConfiguration": cucumberRunConfig,
                     "runEnvironment":   cucumberEnv,
                 };
             }
 
-            // it's important that we pre-load support code so it can be reused across multiple Cucumber runs
-            this.support ??= await loadSupport(cucumberConfig);
-
-            const cucumberRes = await runCucumber(
-                {
-                    ...cucumberConfig,
-                    "support": this.support,
-                },
-                cucumberEnv,
-            );
+            const cucumberRes = await CucumberTool.runCucumber(cucumberRunConfig, cucumberEnv);
 
             if (this.debug) {
                 testRes.debug.cucumber.runResult = cucumberRes;
-            }
-
-            testRes.result = JSON.parse(fs.readFileSync(this.tmpPath, { "encoding": "utf8" }));
-
-            if (!Array.isArray(testRes.result) || !testRes.result.length) {
-                throw new Error("No tests were executed.");
             }
 
             testRes.ok = cucumberRes.success;
             testRes.status = cucumberRes.success
                 ? CommandResultStatus.success
                 : CommandResultStatus.failure;
-
-            fs.unlinkSync(this.tmpPath);
         } catch (err) {
             testRes.error = serializeError(err);
         }
@@ -191,7 +149,7 @@ export class TestCommand extends Command {
      * @throws {@link Error}
      * If any command line args are invalid for this Command.
      */
-    async #buildCucumberConfig(args: ParsedArgs): Promise<IRunConfiguration> {
+    #buildCucumberConfig(args: ParsedArgs): IConfiguration {
         const config = merge({}, this.cucumber);
 
         for (const optKey in args) {
@@ -214,7 +172,7 @@ export class TestCommand extends Command {
             }
         }
 
-        return loadConfiguration({ "provided": config }).then((loaded) => loaded.runConfiguration);
+        return config;
     }
 
     /**
