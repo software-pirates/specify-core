@@ -16,7 +16,7 @@ Feature: Rerun Failed Tests
             And that a "failing feature" file exists at "./features"
             When a user runs the command "npx specify test"
             And a user runs the command "npx specify test --rerun"
-            Then the command should return a $failure exit code
+            Then the last command's exit code should be a $failure
             And the console output should match $failingTestResult
             And the console output should not match $passingTestResult
 
@@ -25,7 +25,7 @@ Feature: Rerun Failed Tests
             Given that a "passing feature" file exists at "./features"
             When a user runs the command "npx specify test"
             And a user runs the command "npx specify test --rerun"
-            Then the command should return an $error exit code
+            Then the last command's exit code should be an $error
             And the console output should match $noTestsToRerun
         
         @skip
@@ -34,12 +34,12 @@ Feature: Rerun Failed Tests
             When a user runs the command "npx specify test"
             And the code under test is modified so the issue is resolved
             And the user runs the command "npx specify test --rerun"
-            Then the command should return a $success exit code
+            Then the last command's exit code should be a $success
             And the console output should match $passingTestResult
 
         @skip
         Scenario: Rerun is attempted with no prior test run
             Given that a "failing feature" file exists at "./features"
             When the user runs the command "npx specify test --rerun"
-            Then the command should return an $error exit code
+            Then the last command's exit code should be an $error
             And the console output should match $noTestsToRerun

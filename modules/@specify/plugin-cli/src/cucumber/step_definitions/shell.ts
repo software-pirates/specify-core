@@ -63,9 +63,9 @@ When(
     waitForMatchingOutput,
 );
 
-Then("the command should return a/an/the {int} exit code", verifyExitCode);
+Then("the last command's exit code/status should be a/an {int}", verifyExitCode);
 
-Then("the command should return a/an/the {ref:exitCode} exit code", verifyExitCode);
+Then("the last command's exit code/status should be a/an {ref:exitCode}", verifyExitCode);
 
 Then(
     "the last command's terminal output should match (the regular expression ){ref:terminalOutput}",
@@ -132,7 +132,7 @@ function verifyExitCode(exitCode: number): void {
     assert.equal(
         this.cli.manager.exitCode,
         exitCode,
-        "The command's status code did not match expectations.",
+        "The command's exit code did not match expectations.",
     );
 }
 

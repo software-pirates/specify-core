@@ -33,7 +33,7 @@ Feature: Shell Step Definitions
             Given a CLI shell
             When the user starts the async command "for num in $(seq 1 3); do sleep 1; echo $num; done"
             And the user waits for the last command to return
-            Then the command should return a 0 exit code
+            Then the last command's exit code should be a 0
 
         Scenario: Execute an asynchronous command and verify terminal output
             Given a CLI shell
@@ -44,7 +44,7 @@ Feature: Shell Step Definitions
         Scenario: Execute a synchronous command and verify exit status
             Given a CLI shell
             When the user runs the command "echo foo"
-            Then the command should return a 0 exit code
+            Then the last command's exit code should be a 0
 
         Scenario: Execute a synchronous command and verify terminal output
             Given a CLI shell
