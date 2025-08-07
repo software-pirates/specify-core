@@ -1,9 +1,10 @@
 import { vi } from "vitest";
 
-import { SessionManager } from "./SessionManager";
-import { ShellSession   } from "./ShellSession";
+import { SessionManager, IOStream } from "./SessionManager";
+import { ShellSession             } from "./ShellSession";
 
 import type { ShellSession as MockShellSession } from "./__mocks__/ShellSession";
+import type { CommandMeta                      } from "./SessionManager";
 
 vi.mock("./ShellSession");
 
@@ -173,7 +174,7 @@ describe("SessionManager", () => {
             const promise = sessionManager.kill().then(() => (resolved = true));
 
             // wait arbitrary time to ensure promise hasn't resolved
-            await new Promise((resolve) => setTimeout(resolve, 100));
+            await new Promise((resolve) => setTimeout(resolve, 10));
 
             expect(resolved).toBeFalsy();
 
@@ -217,7 +218,7 @@ describe("SessionManager", () => {
             const promise = sessionManager.killAll().then(() => (resolved = true));
 
             // wait arbitrary time to ensure promise hasn't resolved
-            await new Promise((resolve) => setTimeout(resolve, 100));
+            await new Promise((resolve) => setTimeout(resolve, 10));
 
             expect(resolved).toBeFalsy();
 
@@ -254,7 +255,7 @@ describe("SessionManager", () => {
             expect(sessionManager.sessions.length).toBe(2);
             expect(sessionManager.activeSession.session).toBe(session);
 
-            sessionManager.removeSession(altSessionMeta);
+            sessionManager.removeSession({ "sessionMeta": altSessionMeta });
 
             expect(sessionManager.sessions.length).toBe(1);
             expect(sessionManager.activeSession.session).toBe(session);
@@ -280,7 +281,7 @@ describe("SessionManager", () => {
             sessionManager.addSession(session);
         });
 
-        it("writes command to session and resolves after delimiter", async () => {
+        it("writes command input to the active session", () => {
             const output  = "test";
             const command = `echo ${output}`;
 
@@ -289,9 +290,59 @@ describe("SessionManager", () => {
             session.emitOutput(output);
             session.emitDelimiter(0);
 
-            await sessionManager.waitForReturn();
-
             expect(session.write).toHaveBeenCalledWith(expect.stringContaining(command));
+        });
+
+        describe("returns a well-formed CommandMeta object...", () => {
+            it("with an accurate timestamp", () => {
+                const startTS = Date.now();
+                const cmdMeta = sessionManager.run("echo test");
+                const endTS   = Date.now();
+
+                expect(cmdMeta.timestamp).toBeGreaterThanOrEqual(startTS);
+                expect(cmdMeta.timestamp).toBeLessThanOrEqual(endTS);
+            });
+
+            describe("with an output array...", () => {
+                let cmdMeta: CommandMeta;
+
+                beforeEach(() => {
+                    cmdMeta = sessionManager.run("echo test");
+                });
+
+                it("which is initially empty", () => {
+                    expect(cmdMeta.output).toEqual([]);
+                });
+
+                describe("which fills with OutputMeta objects as session output is received...", () => {
+                    it("with accurate timestamps", () => {
+                        const startTS = Date.now();
+
+                        session.emitOutput("test");
+
+                        const endTS = Date.now();
+
+                        expect(cmdMeta.output[0].timestamp).toBeGreaterThanOrEqual(startTS);
+                        expect(cmdMeta.output[0].timestamp).toBeLessThanOrEqual(endTS);
+                    });
+
+                    it("with accurate source stream records", () => {
+                        session.emitOutput("test");
+                        session.emitError("whoops");
+
+                        expect(cmdMeta.output[0].stream).toBe(IOStream.STDOUT);
+                        expect(cmdMeta.output[1].stream).toBe(IOStream.STDERR);
+                    });
+                });
+            });
+
+            it("with a promise that resolves after delimiter output is received", async () => {
+                const cmdMeta = sessionManager.run("echo test");
+
+                session.emitDelimiter(0);
+
+                await expect(cmdMeta.promise).resolves.toBe(cmdMeta);
+            });
         });
 
         it("throws if called while another command is in progress", () => {
@@ -317,7 +368,7 @@ describe("SessionManager", () => {
             session.emitOutput("test");
 
             // wait arbitrary time to ensure promise hasn't resolved
-            await new Promise((resolve) => setTimeout(resolve, 100));
+            await new Promise((resolve) => setTimeout(resolve, 10));
 
             expect(sessionManager.exitCode).toBeUndefined();
 
@@ -337,6 +388,110 @@ describe("SessionManager", () => {
             await expect(async () => sessionManager.waitForReturn()).rejects.toThrow(
                 /^Output does not contain a value for ".+"$/,
             );
+        });
+    });
+
+    describe("waitForOutput()", () => {
+        beforeEach(() => {
+            sessionManager.addSession(session);
+
+            sessionManager.run("echo foo");
+        });
+
+        it("resolves when any output is received by default", async () => {
+            let resolved = false;
+
+            const promise = sessionManager.waitForOutput().then(() => (resolved = true));
+
+            expect(resolved).toBe(false);
+
+            session.emitOutput("foo\n");
+
+            await promise;
+
+            expect(sessionManager.output).toBe("foo");
+            expect(resolved).toBe(true);
+        });
+
+        it("resolves only after output is received matching a certain pattern", async () => {
+            let resolved = false;
+
+            const opts    = { "pattern": "bar" };
+            const promise = sessionManager.waitForOutput(opts).then(() => (resolved = true));
+
+            // wait arbitrary time to ensure promise hasn't resolved
+            await new Promise((resolve) => setTimeout(resolve, 10));
+
+            expect(resolved).toBe(false);
+
+            session.emitOutput("foo");
+
+            await new Promise((resolve) => setTimeout(resolve, 10));
+
+            expect(resolved).toBe(false);
+
+            session.emitOutput("bar");
+
+            await promise;
+
+            expect(sessionManager.output).toBe("foo\nbar");
+            expect(resolved).toBe(true);
+        });
+
+        it("resolves only after output is received on a specific stream", async () => {
+            let resolved = false;
+
+            const opts    = { "stream": IOStream.STDERR };
+            const promise = sessionManager.waitForOutput(opts).then(() => (resolved = true));
+
+            // wait arbitrary time to ensure promise hasn't resolved
+            await new Promise((resolve) => setTimeout(resolve, 10));
+
+            expect(resolved).toBe(false);
+
+            session.emitOutput("foo");
+
+            await new Promise((resolve) => setTimeout(resolve, 10));
+
+            expect(resolved).toBe(false);
+
+            session.emitError("bar");
+
+            await promise;
+
+            expect(sessionManager.output).toBe("foo\nbar");
+            expect(resolved).toBe(true);
+        });
+
+        it("resolves only after output is received matching both a certain pattern and stream", async () => {
+            let resolved = false;
+
+            const opts    = { "pattern": "baz", "stream": IOStream.STDERR };
+            const promise = sessionManager.waitForOutput(opts).then(() => (resolved = true));
+
+            // wait arbitrary time to ensure promise hasn't resolved
+            await new Promise((resolve) => setTimeout(resolve, 10));
+
+            expect(resolved).toBe(false);
+
+            session.emitOutput("foo");
+
+            await new Promise((resolve) => setTimeout(resolve, 10));
+
+            expect(resolved).toBe(false);
+
+            session.emitError("bar");
+
+            await new Promise((resolve) => setTimeout(resolve, 10));
+
+            expect(resolved).toBe(false);
+
+            session.emitError("baz");
+
+            await promise;
+
+            expect(sessionManager.output).toBe("foo\nbar\nbaz");
+            expect(resolved).toBe(true);
         });
     });
 });

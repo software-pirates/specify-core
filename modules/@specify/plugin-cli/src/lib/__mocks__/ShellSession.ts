@@ -21,6 +21,10 @@ export class ShellSession {
         this.emitOutput(delimiter);
     });
 
+    emitError = vi.fn((err: string) => {
+        this.#errorCallbacks.forEach((cb) => cb(err + "\n"));
+    });
+
     emitOutput = vi.fn((output: string) => {
         this.#outputCallbacks.forEach((cb) => cb(output + "\n"));
     });

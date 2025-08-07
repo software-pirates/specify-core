@@ -1,17 +1,17 @@
 {
-    "consoleOutput": {
-        "failing test result": "\\(\\d+ failed.*\\n.*\\(\\d+ failed",
-        "no test cases error": "No tests were executed.",
-        "passing test result": "\\(\\d+ passed\\)\\n.*\\(\\d+ passed\\)"
-    },
-    "file": {
-        "passing feature" : {
-            "sourcePath": "./assets/tests/passing.feature"
-        }
-    },
     "exitCode": {
         "error":   2,
         "failure": 1,
         "success": 0
+    },
+    "file": {
+        "passingFeature" : {
+            "sourcePath": "./assets/tests/passing.feature"
+        }
+    },
+    "terminalOutput": {
+        "failingTestResult": "\\(\\d+ failed.*\\n.*\\(\\d+ failed",
+        "noTestCasesError": "No tests were executed.",
+        "passingTestResult": "\\(\\d+ passed\\)\\n.*\\(\\d+ passed\\)"
     }
 }

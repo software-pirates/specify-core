@@ -8,8 +8,8 @@
 import { Given, Then, When      } from "@cucumber/cucumber";
 import assert, { AssertionError } from "node:assert/strict";
 
-import { SessionManager } from "@/lib/SessionManager";
-import { ShellSession   } from "@/lib/ShellSession";
+import { SessionManager, IOStream } from "@/lib/SessionManager";
+import { ShellSession             } from "@/lib/ShellSession";
 
 Given("a/another CLI shell", startDefaultShell);
 
@@ -21,13 +21,60 @@ When("a/the user starts the (async )command/process {string}", execCommand);
 
 When("a/the user waits for the last command to return", { "timeout": 60000 }, waitForCommandReturn);
 
+When("a/the user waits for terminal output", { "timeout": 60000 }, waitForAnyOutput);
+
+When("a/the user waits for terminal output on STDERR", { "timeout": 60000 }, waitForOutputOnSTDERR);
+
+When("a/the user waits for terminal output on STDOUT", { "timeout": 60000 }, waitForOutputOnSTDOUT);
+
+When(
+    "a/the user waits for terminal output on STDERR matching (the regular expression ){ref:terminalOutput}",
+    { "timeout": 60000 },
+    waitForMatchingOutputOnSTDERR,
+);
+
+When(
+    "a/the user waits for terminal output on STDERR matching (the regular expression ){regexp}",
+    { "timeout": 60000 },
+    waitForMatchingOutputOnSTDERR,
+);
+
+When(
+    "a/the user waits for terminal output on STDOUT matching (the regular expression ){ref:terminalOutput}",
+    { "timeout": 60000 },
+    waitForMatchingOutputOnSTDOUT,
+);
+
+When(
+    "a/the user waits for terminal output on STDOUT matching (the regular expression ){regexp}",
+    { "timeout": 60000 },
+    waitForMatchingOutputOnSTDOUT,
+);
+
+When(
+    "a/the user waits for terminal output matching (the regular expression ){ref:terminalOutput}",
+    { "timeout": 60000 },
+    waitForMatchingOutput,
+);
+
+When(
+    "a/the user waits for terminal output matching (the regular expression ){regexp}",
+    { "timeout": 60000 },
+    waitForMatchingOutput,
+);
+
+Then("the command should return a/an/the {int} exit code", verifyExitCode);
+
 Then("the command should return a/an/the {ref:exitCode} exit code", verifyExitCode);
 
-Then("the last command's terminal output should be/include {string}", verifyOutput);
+Then(
+    "the last command's terminal output should match (the regular expression ){ref:terminalOutput}",
+    verifyMatchingOutput,
+);
 
 Then(
-    "the last command's terminal output should be/include a/an/the {ref:consoleOutput}",
-    verifyOutput,
+    "the last command's terminal output should match (the regular expression ){regexp}",
+    verifyMatchingOutput,
 );
 
 /**
@@ -74,27 +121,6 @@ function startDefaultShell(): void {
 }
 
 /**
- * Verify that the CLI output for the last command matches the given regexp.
- *
- * @param consoleOutput - The matcher to use for the output
- *
- * @throws {@link AssertionError}
- * If the matcher regexp wasnt found
- */
-function verifyOutput(consoleOutput: RegExp | string): void {
-    if (typeof consoleOutput === "string") {
-        consoleOutput = new RegExp(consoleOutput, "u");
-    }
-
-    assert.ok(
-        consoleOutput.test(this.cli.manager.output),
-        new AssertionError({
-            "message": `Command output did not match expectations. Output:\n${this.cli.manager.output}`,
-        }),
-    );
-}
-
-/**
  * Verify that the CLI exit code for the last command is as expected.
  *
  * @param exitCode - The exit code expected from the last command
@@ -111,6 +137,32 @@ function verifyExitCode(exitCode: number): void {
 }
 
 /**
+ * Verify that the CLI output for the last command matches the given regexp.
+ *
+ * @param pattern - The pattern to match output against
+ *
+ * @throws {@link AssertionError}
+ * If no matches for the regexp pattern were found
+ */
+function verifyMatchingOutput(pattern: RegExp | string): void {
+    const regexp = new RegExp(pattern);
+
+    assert.ok(
+        regexp.test(this.cli.manager.output),
+        new AssertionError({
+            "message": `Command output did not match expectations. Output:\n${this.cli.manager.output}`,
+        }),
+    );
+}
+
+/**
+ * Wait for literally any output.
+ */
+async function waitForAnyOutput(): Promise<void> {
+    await waitForOutput.call(this);
+}
+
+/**
  * Wait for the last command to return.
  *
  * @throws {@link AssertionError}
@@ -119,4 +171,56 @@ function verifyExitCode(exitCode: number): void {
 async function waitForCommandReturn(): Promise<void> {
     assert.ok(this.cli.manager);
     await this.cli.manager.waitForReturn();
+}
+
+/**
+ * Wait for the last command to send some output.
+ *
+ * @param stream  - The stream to watch for output
+ * @param pattern - The pattern to match output against
+ */
+async function waitForOutput(stream?: IOStream, pattern?: RegExp): Promise<void> {
+    assert.ok(this.cli.manager);
+    await this.cli.manager.waitForOutput({ pattern, stream });
+}
+
+/**
+ * Wait for output on the STDERR stream.
+ */
+async function waitForOutputOnSTDERR(): Promise<void> {
+    await waitForOutput.call(this, IOStream.STDERR);
+}
+
+/**
+ * Wait for output on the STDOUTstream.
+ */
+async function waitForOutputOnSTDOUT(): Promise<void> {
+    await waitForOutput.call(this, IOStream.STDOUT);
+}
+
+/**
+ * Wait for output matching a specific phrase.
+ *
+ * @param pattern - The pattern to match output against
+ */
+async function waitForMatchingOutput(pattern: RegExp): Promise<void> {
+    await waitForOutput.call(this, IOStream.ANY, pattern);
+}
+
+/**
+ * Wait for output matching a specific phrase on the STDERR stream.
+ *
+ * @param pattern - The pattern to match output against
+ */
+async function waitForMatchingOutputOnSTDERR(pattern: RegExp): Promise<void> {
+    await waitForOutput.call(this, IOStream.STDERR, pattern);
+}
+
+/**
+ * Wait for output matching a specific phrase on the STDOUT stream.
+ *
+ * @param pattern - The pattern to match output against
+ */
+async function waitForMatchingOutputOnSTDOUT(pattern: RegExp): Promise<void> {
+    await waitForOutput.call(this, IOStream.STDOUT, pattern);
 }
