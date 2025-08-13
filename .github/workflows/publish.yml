@@ -1,15 +1,19 @@
-name: PR Checks
-on: pull_request
+name: Publish to NPM on tag
 env:
   node_version: 22.x
+on:
+  push:
+    tags:
+      - 'v*'
+permissions:
+  id-token: write # Required for OIDC
+  contents: read
 jobs:
-  build:
+  publish:
     runs-on: ubuntu-latest
     steps:
       - name: Check out repository code
         uses: actions/checkout@v4
-      - name: Setup PNPM
-        uses: pnpm/action-setup@v4
       - name: Setup Node.js ${{ env.node_version }}
         uses: actions/setup-node@v4
         with:
@@ -21,3 +25,5 @@ jobs:
         run: pnpm lint
       - name: Test
         run: pnpm test
+      - name: Publish to NPM
+        run: npm publish
